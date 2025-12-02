@@ -2,124 +2,148 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Interactive 3D Cell Data</title>
+    <title>Interactive 3D Cell Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
-        /* 1. LAYOUT & TYPOGRAPHY */
+        /* --- LAYOUT & THEME --- */
         body { 
             margin: 0; padding: 0; 
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex; flex-direction: column; 
             height: 100vh; overflow: hidden; 
-            background-color: #f8f9fa;
+            background-color: #f0f2f5;
         }
         
-        /* 2. NAVIGATION BAR */
+        /* NAVIGATION */
         nav {
-            background-color: #2c3e50;
+            background-color: #1a1a1a;
             color: white;
             padding: 0 20px;
-            height: 50px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 20;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            z-index: 100;
             flex-shrink: 0;
         }
-        
-        .nav-title { font-weight: bold; font-size: 16px; margin-right: 20px; color: #ecf0f1; }
-        
+        .nav-title { font-weight: 600; font-size: 15px; color: #e0e0e0; letter-spacing: 0.5px; }
         .nav-links a {
-            color: #bdc3c7; text-decoration: none; font-size: 14px;
-            margin-left: 20px; padding-bottom: 4px;
-            transition: color 0.2s, border-bottom 0.2s;
+            color: #888; text-decoration: none; font-size: 13px;
+            margin-left: 15px; padding: 14px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
         }
         .nav-links a:hover { color: white; }
-        .nav-links a.active { color: white; border-bottom: 2px solid #3498db; }
+        .nav-links a.active { color: #3498db; border-bottom-color: #3498db; }
 
-        /* 3. MAIN WRAPPER */
+        /* MAIN CONTENT */
         #main-wrapper {
             display: flex; flex-grow: 1;
-            height: calc(100vh - 50px);
+            height: calc(100vh - 48px);
             overflow: hidden;
         }
 
-        /* 4. SIDEBAR CONTROLS */
+        /* SIDEBAR */
         #controls {
             width: 300px;
             background: #ffffff;
             padding: 20px;
             overflow-y: auto;
-            border-right: 1px solid #ddd;
-            display: flex; flex-direction: column; gap: 15px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
-            z-index: 10;
+            border-right: 1px solid #e1e4e8;
+            display: flex; flex-direction: column; gap: 20px;
+            box-shadow: 4px 0 12px rgba(0,0,0,0.03);
+            z-index: 50;
         }
         
-        #plot-container { flex-grow: 1; position: relative; background: white; }
+        #plot-container { flex-grow: 1; position: relative; background: #fff; }
         #graph { width: 100%; height: 100%; }
 
-        /* 5. CONTROL UI ELEMENTS */
-        h3 { margin: 0 0 10px 0; font-size: 16px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; color: #333; display: flex; justify-content: space-between; align-items: center; }
+        /* CONTROLS UI */
+        h3 { 
+            margin: 0; font-size: 14px; text-transform: uppercase; 
+            color: #5f6368; letter-spacing: 1px; border-bottom: 1px solid #eee; 
+            padding-bottom: 10px; display: flex; justify-content: space-between; 
+            align-items: center;
+        }
         
         .control-group { 
-            background: #f8f9fa; padding: 15px; 
-            border-radius: 6px; border: 1px solid #e9ecef;
+            background: #fff; 
         }
         
-        .control-group h4 { margin: 0 0 12px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; letter-spacing: 0.5px; }
+        .control-header {
+            font-size: 13px; font-weight: 700; color: #333;
+            margin-bottom: 12px; display: flex; align-items: center;
+        }
+        .control-header::before {
+            content: ''; display: inline-block; width: 4px; height: 14px;
+            background: #3498db; margin-right: 8px; border-radius: 2px;
+        }
+
+        .input-row { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 6px; }
         
-        label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; color: #444; }
-        
-        /* Better Slider Styling */
         input[type=range] { 
-            width: 100%; margin: 5px 0 15px 0; cursor: pointer; 
-            accent-color: #3498db;
+            width: 100%; margin: 0; cursor: pointer; height: 4px;
+            background: #dfe6e9; border-radius: 2px; appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none; width: 16px; height: 16px; background: #3498db; 
+            border-radius: 50%; cursor: pointer; transition: background 0.15s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { background: #2980b9; transform: scale(1.1); }
+        
+        input[type=color] { 
+            width: 100%; height: 28px; border: 1px solid #dfe6e9; 
+            border-radius: 4px; cursor: pointer; padding: 2px;
         }
         
-        input[type=color] { border: 1px solid #ccc; padding: 0; width: 100%; height: 25px; cursor: pointer; border-radius: 4px; }
-        span.value-display { font-weight: 600; color: #2980b9; font-size: 12px; }
+        span.value-display { font-family: monospace; color: #3498db; font-weight: bold; }
         
         button.action-btn {
-            width: 100%; padding: 12px; background: #3498db; color: white; border: none; 
-            border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.2s;
-            margin-top: 5px;
+            width: 100%; padding: 10px; background: #f1f3f4; color: #333; 
+            border: 1px solid #dcdfe6; border-radius: 6px; cursor: pointer; 
+            font-size: 13px; font-weight: 600; transition: all 0.2s;
         }
-        button.action-btn:hover { background: #2980b9; }
+        button.action-btn:hover { background: #e8eaed; border-color: #c0c4cc; }
 
         button.help-btn {
-            background: none; border: 1px solid #ccc; color: #666; 
-            border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
-            font-size: 12px; line-height: 1;
+            background: #3498db; color: white; border: none; 
+            border-radius: 12px; width: 20px; height: 20px; 
+            font-size: 12px; cursor: pointer;
         }
-        button.help-btn:hover { background: #eee; color: #333; }
 
-        /* 6. GUIDED TOUR MODAL */
+        /* TOUR OVERLAY */
         #tour-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000;
+            background: rgba(0,0,0,0.6); z-index: 2000;
             display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(2px);
         }
         #tour-box {
-            background: white; width: 500px; padding: 30px; border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            position: relative;
+            background: white; width: 450px; padding: 30px; border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative;
         }
-        #tour-box h2 { margin-top: 0; color: #2c3e50; }
-        #tour-box p { color: #555; line-height: 1.5; }
-        #tour-box ul { color: #555; margin-bottom: 25px; }
-        #tour-box li { margin-bottom: 8px; }
+        #tour-box h2 { margin-top: 0; color: #2c3e50; font-size: 20px; }
+        #tour-box p { color: #555; line-height: 1.6; font-size: 14px; }
+        #tour-box ul { padding-left: 20px; color: #444; margin-bottom: 25px; }
+        #tour-box li { margin-bottom: 10px; font-size: 13px; }
         #tour-close {
-            position: absolute; top: 15px; right: 15px; cursor: pointer;
-            font-size: 20px; color: #999;
+            position: absolute; top: 15px; right: 20px; cursor: pointer;
+            font-size: 24px; color: #aaa; transition: color 0.2s;
+        }
+        #tour-close:hover { color: #333; }
+        button.primary-btn {
+            background: #3498db; color: white; border: none; width: 100%;
+            padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
     <nav>
-        <span class="nav-title">Data Visualization Dashboard</span>
+        <span class="nav-title">3D Visualization Dashboard</span>
         <div class="nav-links">
             <a href="index.html">Static View 1</a>
             <a href="index(1).html">Static View 2</a>
@@ -128,50 +152,59 @@
     </nav>
 
     <div id="main-wrapper">
-        
         <div id="controls">
-            <h3>Settings <button class="help-btn" onclick="toggleTour()">?</button></h3>
+            <h3>Controls <button class="help-btn" onclick="toggleTour()">?</button></h3>
 
-            <div class="control-group" id="grp-sphere">
-                <h4>1. Sphere Appearance</h4>
-                <label>Transparency: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
-                <input type="range" id="sphere-opacity" min="0" max="1" step="0.05" value="0.1">
+            <div class="control-group">
+                <div class="control-header">Sphere Appearance</div>
                 
-                <label style="margin-bottom: 8px;">Membrane Color:</label>
-                <input type="color" id="sphere-color" value="#FFC8DC">
+                <div class="input-row">
+                    <label>Transparency: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
+                    <input type="range" id="sphere-opacity" min="0" max="1" step="0.05" value="0.1">
+                </div>
                 
-                <label style="margin-top: 15px;">Sphere Size (Zoom): <span id="val-sphere-scale" class="value-display">1.0</span></label>
-                <input type="range" id="sphere-scale" min="0.5" max="1.5" step="0.05" value="1.0">
+                <div class="input-row">
+                    <label>Membrane Color</label>
+                    <input type="color" id="sphere-color" value="#FFC8DC">
+                </div>
+                
+                <div class="input-row">
+                    <label>Sphere Size (Zoom): <span id="val-sphere-scale" class="value-display">1.0</span></label>
+                    <input type="range" id="sphere-scale" min="0.5" max="1.5" step="0.05" value="1.0">
+                </div>
             </div>
 
-            <div class="control-group" id="grp-markers">
-                <h4>2. Data Points</h4>
-                <label>Pair Marker Size: <span id="val-pair-size" class="value-display">8</span></label>
-                <input type="range" id="pair-size" min="2" max="30" step="1" value="8">
+            <div class="control-group">
+                <div class="control-header">Data Points</div>
+                
+                <div class="input-row">
+                    <label>Pair Marker Size: <span id="val-pair-size" class="value-display">8</span></label>
+                    <input type="range" id="pair-size" min="2" max="30" step="1" value="8">
+                </div>
 
-                <label>Background Points Size: <span id="val-single-size" class="value-display">5</span></label>
-                <input type="range" id="single-size" min="1" max="20" step="1" value="5">
+                <div class="input-row">
+                    <label>Single Points Size: <span id="val-single-size" class="value-display">5</span></label>
+                    <input type="range" id="single-size" min="1" max="20" step="1" value="5">
+                </div>
             </div>
 
-            <div class="control-group" id="grp-labels">
-                <h4>3. Readability</h4>
-                <label>Label Spacing (Expansion): <span id="val-label-dist" class="value-display">1.0</span></label>
-                <input type="range" id="label-dist" min="0.8" max="2.0" step="0.05" value="1.0">
+            <div class="control-group">
+                <div class="control-header">Layout & Labels</div>
+                
+                <div class="input-row">
+                    <label>Label Expansion: <span id="val-label-dist" class="value-display">1.0</span></label>
+                    <input type="range" id="label-dist" min="0.8" max="2.0" step="0.05" value="1.0">
+                </div>
 
-                <label>Label Font Size: <span id="val-font-size" class="value-display">11</span></label>
-                <input type="range" id="font-size" min="8" max="24" step="1" value="11">
-
-                <label>Connector Line Opacity: <span id="val-line-opacity" class="value-display">1.0</span></label>
-                <input type="range" id="line-opacity" min="0" max="1" step="0.1" value="1.0">
-            </div>
-
-            <div class="control-group" id="grp-axes">
-                <h4>4. Grid & Axes</h4>
-                <label>Number Size: <span id="val-tick-size" class="value-display">20</span></label>
-                <input type="range" id="tick-size" min="10" max="40" step="1" value="20">
-
-                <label>Title Size: <span id="val-title-size" class="value-display">24</span></label>
-                <input type="range" id="title-size" min="12" max="50" step="1" value="24">
+                <div class="input-row">
+                    <label>Font Size: <span id="val-font-size" class="value-display">11</span></label>
+                    <input type="range" id="font-size" min="8" max="24" step="1" value="11">
+                </div>
+                
+                <div class="input-row">
+                    <label>Axis Text Size: <span id="val-tick-size" class="value-display">20</span></label>
+                    <input type="range" id="tick-size" min="10" max="40" step="1" value="20">
+                </div>
             </div>
 
             <button class="action-btn" onclick="resetView()">Reset Camera View</button>
@@ -180,21 +213,20 @@
         <div id="plot-container">
             <div id="graph"></div>
         </div>
-
     </div>
 
     <div id="tour-overlay" onclick="toggleTour()">
         <div id="tour-box" onclick="event.stopPropagation()">
             <span id="tour-close" onclick="toggleTour()">&times;</span>
             <h2>Dashboard Guide</h2>
-            <p>Welcome to the interactive cell visualizer. Here is how to use the controls:</p>
+            <p>This interactive tool allows you to customize the 3D visualization for presentations or analysis.</p>
             <ul>
-                <li><strong>Sphere Appearance:</strong> Adjusts the "cell membrane" bubble. Use "Sphere Size" to scale the reference boundary.</li>
-                <li><strong>Data Points:</strong> Controls how large the data dots appear. If they overlap, reduce these values.</li>
-                <li><strong>Readability:</strong> Key for export. "Label Spacing" pushes text labels further out to prevent overlapping.</li>
-                <li><strong>Grid & Axes:</strong> Increase these font sizes if you plan to take screenshots for papers/presentations.</li>
+                <li><strong>Sphere Appearance:</strong> Adjust the "Cell Membrane" to make it visible or subtle. "Sphere Size" scales the reference boundary.</li>
+                <li><strong>Data Points:</strong> If markers are overlapping, reduce the "Pair Marker Size".</li>
+                <li><strong>Label Expansion:</strong> The most important control. Use this to push text labels further out from the center to prevent clutter.</li>
+                <li><strong>Reset Camera:</strong> Click this if you get lost while rotating the 3D view.</li>
             </ul>
-            <button class="action-btn" onclick="toggleTour()">Got it!</button>
+            <button class="primary-btn" onclick="toggleTour()">Got it</button>
         </div>
     </div>
 
@@ -224,12 +256,19 @@
             baseRadius: 10.4 
         };
 
-        // --- 2. PLOT INITIALIZATION ---
+        // --- 2. INITIALIZATION ---
+        // Indices for efficient batch updating
+        const SPHERE_IDX = 0;
+        const SINGLE_IDX = 1;
+        // Markers are at even indices starting from 2: [2, 4, 6, 8, 10, 12, 14, 16]
+        const MARKER_INDICES = rawData.centers.map((_, i) => 2 + (i * 2));
+        // Lines are at odd indices starting from 3: [3, 5, 7, 9, 11, 13, 15, 17]
+        const LINE_INDICES = rawData.centers.map((_, i) => 3 + (i * 2));
+
         var data = [
             {
                 type: "mesh3d", alphahull: 0, color: "rgb(255, 200, 220)", opacity: 0.1,
-                name: "Cell Membrane", hoverinfo: "skip",
-                x: [], y: [], z: [] // Filled dynamically
+                name: "Cell Membrane", hoverinfo: "skip", x: [], y: [], z: []
             },
             {
                 type: "scatter3d", mode: "markers", name: "Single Points",
@@ -253,7 +292,7 @@
         ];
 
         pairsData.forEach((p, i) => {
-            // Marker
+            // Marker Trace
             data.push({
                 type: "scatter3d", mode: "markers+lines",
                 name: `Pair ${i+1} (${p.dist}µm)`,
@@ -261,7 +300,7 @@
                 line: { width: 4, color: colors[i] },
                 x: [p.p1[0], p.p2[0]], y: [p.p1[1], p.p2[1]], z: [p.p1[2], p.p2[2]]
             });
-            // Line Stem
+            // Line Stem Trace
             data.push({
                 type: "scatter3d", mode: "lines", showlegend: false,
                 line: { color: "gray", width: 2 }, hoverinfo: "skip",
@@ -283,7 +322,7 @@
             }
         };
 
-        // --- 3. GEOMETRY GENERATION ---
+        // Generate Sphere Geometry
         function generateSphere(radius) {
             const u = [], v = [];
             for(let i=0; i<=20; i++) u.push(i * Math.PI / 20);
@@ -300,16 +339,13 @@
             return {x, y, z};
         }
 
-        // Initialize Sphere
         const initialSphere = generateSphere(rawData.baseRadius);
         data[0].x = initialSphere.x; data[0].y = initialSphere.y; data[0].z = initialSphere.z;
 
-        // Render Initial Plot
         Plotly.newPlot('graph', data, layout, {responsive: true});
 
-        // --- 4. PERFORMANCE & LOGIC ---
-
-        // Debounce function: Waits for 'wait' milliseconds of silence before triggering
+        // --- 3. BATCHED UPDATE LOGIC (The Fix) ---
+        // We use a 'debounce' to prevent firing calculations on every single pixel of mouse movement
         function debounce(func, wait) {
             let timeout;
             return function(...args) {
@@ -319,9 +355,8 @@
             };
         }
 
-        // The Heavy Lifting Function (Logic Calculation)
         function updateGraphLogic() {
-            // 1. Gather inputs
+            // 1. GATHER INPUTS
             const sphereOpacity = parseFloat(document.getElementById('sphere-opacity').value);
             const sphereColor = document.getElementById('sphere-color').value;
             const sphereScale = parseFloat(document.getElementById('sphere-scale').value);
@@ -329,51 +364,29 @@
             const singleSize = parseInt(document.getElementById('single-size').value);
             const labelDistMult = parseFloat(document.getElementById('label-dist').value);
             const fontSize = parseInt(document.getElementById('font-size').value);
-            const lineOpacity = parseFloat(document.getElementById('line-opacity').value);
-            const lineWidth = parseInt(document.getElementById('line-width').value);
             const tickSize = parseInt(document.getElementById('tick-size').value);
-            const titleSize = parseInt(document.getElementById('title-size').value);
 
-            // 2. Calculations
+            // 2. PRE-CALCULATE ARRAYS
             const newRadius = rawData.baseRadius * sphereScale;
             const sphereMesh = generateSphere(newRadius);
             const currentLabelRadius = newRadius * 1.35 * labelDistMult; 
 
-            // 3. Batch Updates
-            // Plotly.restyle is much lighter when we specificy indices
-            
-            // A. Update Sphere (Trace 0)
-            Plotly.restyle('graph', {
-                'opacity': sphereOpacity,
-                'color': sphereColor,
-                'x': [sphereMesh.x], 'y': [sphereMesh.y], 'z': [sphereMesh.z]
-            }, [0]);
-
-            // B. Update Single Points (Trace 1)
-            Plotly.restyle('graph', { 'marker.size': singleSize }, [1]);
-
-            // C. Update Pairs loop
+            // Prepare arrays for Line Updates
+            const lineX = [], lineY = [], lineZ = [];
             const newAnnotations = [];
+
             rawData.centers.forEach((center, i) => {
-                const markerTraceIdx = 2 + (i * 2);
-                const lineTraceIdx = 3 + (i * 2);
-
-                // Update Marker Size
-                Plotly.restyle('graph', {'marker.size': pairSize}, [markerTraceIdx]);
-
-                // Calculate positions
                 const vec = rawData.vectors[i];
                 const lx = vec.x * currentLabelRadius;
                 const ly = vec.y * currentLabelRadius;
                 const lz = vec.z * currentLabelRadius;
 
-                // Update Line
-                Plotly.restyle('graph', {
-                    'x': [[center.x, lx]], 'y': [[center.y, ly]], 'z': [[center.z, lz]],
-                    'line.width': lineWidth, 'opacity': lineOpacity
-                }, [lineTraceIdx]);
+                // Push coordinate arrays for this line
+                lineX.push([center.x, lx]);
+                lineY.push([center.y, ly]);
+                lineZ.push([center.z, lz]);
 
-                // Build Annotations
+                // Create annotation object
                 newAnnotations.push({
                     x: lx, y: ly, z: lz,
                     text: `Pair ${i+1}`,
@@ -385,33 +398,53 @@
                 });
             });
 
-            // D. Layout Update (Axes & Annotations)
+            // 3. EXECUTE BATCHED UPDATES (Minimizing Plotly Calls)
+            
+            // A. Update Sphere
+            Plotly.restyle('graph', {
+                'opacity': sphereOpacity,
+                'color': sphereColor,
+                'x': [sphereMesh.x], 'y': [sphereMesh.y], 'z': [sphereMesh.z]
+            }, [SPHERE_IDX]);
+
+            // B. Update Single Points
+            Plotly.restyle('graph', { 'marker.size': singleSize }, [SINGLE_IDX]);
+
+            // C. Update All Pair Markers (Batch update size only)
+            Plotly.restyle('graph', { 'marker.size': pairSize }, MARKER_INDICES);
+
+            // D. Update All Connector Lines (Batch update geometry)
+            Plotly.restyle('graph', { 
+                'x': lineX, 
+                'y': lineY, 
+                'z': lineZ 
+            }, LINE_INDICES);
+
+            // E. Update Layout (Annotations & Axes)
             Plotly.relayout('graph', {
                 'scene.annotations': newAnnotations,
                 'scene.xaxis.tickfont.size': tickSize,
                 'scene.yaxis.tickfont.size': tickSize,
                 'scene.zaxis.tickfont.size': tickSize,
-                'scene.xaxis.title.font.size': titleSize,
-                'scene.yaxis.title.font.size': titleSize,
-                'scene.zaxis.title.font.size': titleSize,
+                // Scales Titles relative to ticks (approx logic)
+                'scene.xaxis.title.font.size': tickSize + 4,
+                'scene.yaxis.title.font.size': tickSize + 4,
+                'scene.zaxis.title.font.size': tickSize + 4,
             });
         }
 
-        // Create the debounced version (Waits 50ms after user stops sliding)
         const debouncedUpdate = debounce(updateGraphLogic, 50);
 
-        // Immediate visual feedback for numbers, debounced for graph
         function handleInput(e) {
-            // 1. Update the number span immediately
+            // Update the text number immediately for responsiveness
             const spanId = 'val-' + e.target.id;
             const span = document.getElementById(spanId);
             if(span) span.textContent = e.target.value;
-
-            // 2. Trigger the efficient graph update
+            // Trigger the heavy graph update
             debouncedUpdate();
         }
 
-        // --- 5. SETUP LISTENERS ---
+        // Listeners
         document.querySelectorAll('input').forEach(input => {
             input.addEventListener('input', handleInput);
         });
@@ -420,18 +453,13 @@
             Plotly.relayout('graph', {'scene.camera': null});
         }
 
-        // Guided Tour Logic
         function toggleTour() {
             const modal = document.getElementById('tour-overlay');
             modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        // Show tour on first visit (optional check)
-        // toggleTour(); 
-        
-        // Initial run
-        updateGraphLogic();
-
+        // Initial check to toggle tour if needed, currently off by default
+        // toggleTour();
     </script>
 </body>
 </html>
