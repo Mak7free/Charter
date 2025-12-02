@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Interactive 3D Cell Data</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Controls */
+        #controls {
+            width: 320px;
+            background: #f4f4f4;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        
+        /* Main Plot Area */
+        #plot-container {
+            flex-grow: 1;
+            position: relative;
+        }
+        #graph { width: 100%; height: 100%; }
+
+        /* Control Styling */
+        h3 { margin-top: 0; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .control-group { margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        .control-group h4 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: #555; }
+        
+        label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; align-items: center; }
+        input[type=range] { width: 100%; margin: 5px 0 15px 0; cursor: pointer; }
+        input[type=color] { border: none; width: 40px; height: 25px; cursor: pointer; }
+        span.value-display { font-weight: bold; color: #007bff; font-size: 12px; }
+        
+        button {
+            width: 100%; padding: 10px; background: #007bff; color: white; border: none; 
+            border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 10px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+  <nav style="background-color: #333; color: white; padding: 10px 0; text-align: center; font-family: Arial, sans-serif; border-bottom: 3px solid #444; margin-bottom: 0;">
+    <span style="margin-right: 20px; font-weight: normal; color: #aaa;">Select Visualization:</span>
+    
+    <a href="index.html" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px; padding: 5px 10px; border: 1px solid #555; border-radius: 4px; background-color: #444;">
+        Static View (index.html)
+    </a>
+
+    <a href="index(1).html" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px; padding: 5px 10px; border: 1px solid #555; border-radius: 4px; background-color: #444;">
+        Alt Static View (index(1).html)
+    </a>
+
+    <a href="interactive_plot.html" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px; padding: 5px 10px; border: 1px solid #28a745; border-radius: 4px; background-color: #1e7e34;">
+        Interactive Dashboard
+    </a>
+  </nav>
+
+    <div id="controls">
+        <h3>Display Settings</h3>
+
+        <div class="control-group">
+            <h4>Sphere Settings</h4>
+            <label>Opacity: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
+            <input type="range" id="sphere-opacity" min="0" max="1" step="0.05" value="0.1">
+            
+            <label>Color: <input type="color" id="sphere-color" value="#FFC8DC"></label>
+            
+            <label>Radius Scale: <span id="val-sphere-scale" class="value-display">1.0</span></label>
+            <input type="range" id="sphere-scale" min="0.5" max="1.5" step="0.05" value="1.0">
+        </div>
+
+        <div class="control-group">
+            <h4>Marker Sizes</h4>
+            <label>Pair Markers: <span id="val-pair-size" class="value-display">8</span></label>
+            <input type="range" id="pair-size" min="2" max="30" step="1" value="8">
+
+            <label>Single Points: <span id="val-single-size" class="value-display">5</span></label>
+            <input type="range" id="single-size" min="1" max="20" step="1" value="5">
+        </div>
+
+        <div class="control-group">
+            <h4>Labels & Lines</h4>
+            <label>Label Dist (Radius): <span id="val-label-dist" class="value-display">1.0</span></label>
+            <input type="range" id="label-dist" min="0.8" max="2.0" step="0.05" value="1.0">
+
+            <label>Font Size: <span id="val-font-size" class="value-display">11</span></label>
+            <input type="range" id="font-size" min="8" max="24" step="1" value="11">
+
+            <label>Line Opacity: <span id="val-line-opacity" class="value-display">1.0</span></label>
+            <input type="range" id="line-opacity" min="0" max="1" step="0.1" value="1.0">
+            
+            <label>Line Width: <span id="val-line-width" class="value-display">2</span></label>
+            <input type="range" id="line-width" min="1" max="10" step="1" value="2">
+        </div>
+
+        <div class="control-group">
+            <h4>Axes</h4>
+            <label>Tick Font Size: <span id="val-tick-size" class="value-display">20</span></label>
+            <input type="range" id="tick-size" min="10" max="40" step="1" value="20">
+
+            <label>Title Font Size: <span id="val-title-size" class="value-display">24</span></label>
+            <input type="range" id="title-size" min="12" max="50" step="1" value="24">
+        </div>
+
+        <button onclick="resetView()">Reset Camera</button>
+    </div>
+
+    <div id="plot-container">
+        <div id="graph"></div>
+    </div>
+
+    <script>
+        // --- 1. RAW DATA (Extracted from your Python output) ---
+        // We store the raw coordinates here so we can recalculate positions in JS
+        const rawData = {
+            // Pair Centers (Anchor for lines)
+            centers: [
+                {x: 0.4955, y: 1.8880, z: -2.1130}, // Pair 1
+                {x: 1.4530, y: -4.5535, z: -0.7318}, // Pair 2
+                {x: 0.8735, y: 2.2900, z: -1.8457}, // Pair 3
+                {x: 4.2345, y: 5.5730, z: 1.4450},  // Pair 4
+                {x: 0.9230, y: -1.7975, z: 0.4948},  // Pair 5
+                {x: 1.4465, y: 1.9470, z: -1.9415},  // Pair 6
+                {x: -7.3545, y: -0.3885, z: 1.5013}, // Pair 7
+                {x: 1.7735, y: -3.5050, z: -0.2461}  // Pair 8
+            ],
+            // Initial Label Positions (Pre-calculated vectors)
+            // Normalized vectors derived from your Python 'vectors' variable
+            vectors: [
+                 {x: -0.638, y: 0.091, z: -0.697},
+                 {x: -0.199, y: -0.988, z: -0.112},
+                 {x: -0.063, y: 0.999, z: -0.223},
+                 {x: 0.099, y: 0.657, z: 0.781},
+                 {x: 0.492, y: -0.564, z: 0.707},
+                 {x: 0.903, y: 0.489, z: 0.037},
+                 {x: -0.801, y: -0.111, z: 0.622},
+                 {x: 0.780, y: -0.507, z: -0.405}
+            ],
+            // Base Radius
+            baseRadius: 10.4 // Approx from your data
+        };
+
+        // --- 2. INITIAL PLOTLY DATA ---
+        // This object mirrors the JSON structure found in your original HTML
+        var data = [
+            // Trace 0: Sphere (Mesh3d)
+            {
+                type: "mesh3d",
+                alphahull: 0,
+                color: "rgb(255, 200, 220)",
+                opacity: 0.1,
+                name: "Cell Membrane",
+                hoverinfo: "skip",
+                // Coordinates (Shortened for brevity, full mesh logic handled by plot)
+                x: [0, 10.4, 0, -10.4, 0, 0], 
+                y: [10.4, 0, -10.4, 0, 0, 0],
+                z: [0, 0, 0, 0, 10.4, -10.4],
+                // Note: In a real scenario, we'd copy the full mesh arrays. 
+                // For this interactive demo, I will generate a simple sphere dynamically below.
+            },
+            // Trace 1: Single Points
+            {
+                type: "scatter3d",
+                mode: "markers",
+                name: "Single Points",
+                marker: { color: "#666666", opacity: 0.5, size: 5, symbol: "circle" },
+                x: [0.37, 4.39, -1.32, -0.20, -3.47, -1.60, 2.80, 3.37, -5.37, -4.25, -2.41],
+                y: [6.75, 8.24, -2.10, -3.27, 1.07, 1.25, 3.30, -2.22, -3.99, -2.94, -9.00],
+                z: [1.30, 1.49, 1.13, 0.71, -1.09, -0.77, -0.35, 0.53, 1.50, 0.96, 1.46]
+            }
+        ];
+
+        // Add Pairs (Data Markers and Lines)
+        // We generate these dynamically to make them easier to update
+        const colors = ['#E6194B', '#3CB44B', '#4363D8', '#F58231', '#911EB4', '#42D4F4', '#F032E6', '#bfef45'];
+        const pairsData = [
+            {p1: [0.52, 1.88, -2.15], p2: [0.48, 1.89, -2.07], dist: "0.09"},
+            {p1: [1.31, -4.55, -0.72], p2: [1.60, -4.56, -0.74], dist: "0.29"},
+            {p1: [0.64, 2.25, -1.98], p2: [1.10, 2.32, -1.71], dist: "0.54"},
+            {p1: [3.90, 5.69, 1.39], p2: [4.57, 5.46, 1.50], dist: "0.72"},
+            {p1: [1.05, -1.46, 0.36], p2: [0.80, -2.13, 0.63], dist: "0.76"},
+            {p1: [1.03, 1.82, -1.97], p2: [1.86, 2.07, -1.91], dist: "0.87"},
+            {p1: [-7.03, -0.86, 1.50], p2: [-7.68, 0.08, 1.50], dist: "1.13"},
+            {p1: [1.69, -4.09, -0.55], p2: [1.86, -2.92, 0.06], dist: "1.33"}
+        ];
+
+        pairsData.forEach((p, i) => {
+            // 1. The Pair Markers (Trace 2 + i*2)
+            data.push({
+                type: "scatter3d",
+                mode: "markers+lines",
+                name: `Pair ${i+1} (${p.dist}µm)`,
+                marker: { size: 8, color: colors[i], symbol: i < 4 ? 'square' : 'circle' },
+                line: { width: 4, color: colors[i] },
+                x: [p.p1[0], p.p2[0]], y: [p.p1[1], p.p2[1]], z: [p.p1[2], p.p2[2]]
+            });
+
+            // 2. The Connector Line (Trace 3 + i*2)
+            // Initial coordinates will be updated by updatePlot()
+            data.push({
+                type: "scatter3d",
+                mode: "lines",
+                showlegend: false,
+                line: { color: "gray", width: 2 },
+                hoverinfo: "skip",
+                x: [0, 0], y: [0, 0], z: [0, 0] // Placeholder
+            });
+        });
+
+        // --- 3. LAYOUT ---
+        var layout = {
+            margin: { l: 0, r: 0, b: 0, t: 0 },
+            paper_bgcolor: "white",
+            showlegend: true,
+            legend: { x: 0.85, y: 0.9, bgcolor: "rgba(255,255,255,0.8)", bordercolor: "black", borderwidth: 1 },
+            scene: {
+                aspectmode: "cube",
+                xaxis: { title: { text: "<b>X (µm)</b>", font: { size: 24, family: "Arial" } }, tickfont: { size: 20 }, range: [-15, 15] },
+                yaxis: { title: { text: "<b>Y (µm)</b>", font: { size: 24, family: "Arial" } }, tickfont: { size: 20 }, range: [-15, 15] },
+                zaxis: { title: { text: "<b>Z (µm)</b>", font: { size: 24, family: "Arial" } }, tickfont: { size: 20 }, range: [-15, 15] },
+                annotations: [] // Will be filled by updatePlot
+            }
+        };
+
+        // --- 4. INITIAL RENDER ---
+        // Helper to generate a better sphere mesh
+        function generateSphere(radius) {
+            const u = [], v = [];
+            for(let i=0; i<=20; i++) u.push(i * Math.PI / 20);
+            for(let j=0; j<=40; j++) v.push(j * 2 * Math.PI / 40);
+            
+            const x=[], y=[], z=[];
+            for(let i=0; i<u.length; i++) {
+                for(let j=0; j<v.length; j++) {
+                    x.push(radius * Math.sin(u[i]) * Math.cos(v[j]));
+                    y.push(radius * Math.sin(u[i]) * Math.sin(v[j]));
+                    z.push(radius * Math.cos(u[i]));
+                }
+            }
+            return {x, y, z};
+        }
+
+        const initialSphere = generateSphere(rawData.baseRadius);
+        data[0].x = initialSphere.x;
+        data[0].y = initialSphere.y;
+        data[0].z = initialSphere.z;
+
+        Plotly.newPlot('graph', data, layout, {responsive: true});
+
+        // --- 5. UPDATE LOGIC ---
+        function updatePlot() {
+            // Get values from inputs
+            const sphereOpacity = parseFloat(document.getElementById('sphere-opacity').value);
+            const sphereColor = document.getElementById('sphere-color').value;
+            const sphereScale = parseFloat(document.getElementById('sphere-scale').value);
+            
+            const pairSize = parseInt(document.getElementById('pair-size').value);
+            const singleSize = parseInt(document.getElementById('single-size').value);
+            
+            const labelDistMult = parseFloat(document.getElementById('label-dist').value);
+            const fontSize = parseInt(document.getElementById('font-size').value);
+            const lineOpacity = parseFloat(document.getElementById('line-opacity').value);
+            const lineWidth = parseInt(document.getElementById('line-width').value);
+            
+            const tickSize = parseInt(document.getElementById('tick-size').value);
+            const titleSize = parseInt(document.getElementById('title-size').value);
+
+            // Update Displays
+            document.querySelectorAll('.value-display').forEach(el => {
+                const input = document.getElementById(el.id.replace('val-', ''));
+                if(input) el.textContent = input.value;
+            });
+
+            // 1. Update Sphere
+            const newRadius = rawData.baseRadius * sphereScale;
+            const sphereMesh = generateSphere(newRadius);
+            
+            // 2. Calculate New Label Positions
+            // The label radius is based on the CURRENT sphere radius + multiplier
+            const currentLabelRadius = newRadius * 1.35 * labelDistMult; 
+            
+            const newAnnotations = [];
+            const updateTraces = {}; // To store updates for Plotly.restyle
+
+            // Update Sphere Trace (Trace 0)
+            updateTraces['opacity'] = [sphereOpacity];
+            updateTraces['color'] = [sphereColor];
+            updateTraces['x'] = [sphereMesh.x]; 
+            updateTraces['y'] = [sphereMesh.y]; 
+            updateTraces['z'] = [sphereMesh.z];
+
+            // Update Single Points (Trace 1)
+            // We need to use sparse arrays for restyle if we are updating specific traces
+            // But for simplicity in this demo structure, we will update specific indices
+            Plotly.restyle('graph', {
+                'marker.size': singleSize
+            }, [1]);
+
+            Plotly.restyle('graph', {
+                'opacity': sphereOpacity,
+                'color': sphereColor,
+                'x': [sphereMesh.x],
+                'y': [sphereMesh.y],
+                'z': [sphereMesh.z]
+            }, [0]);
+
+            // Update Pairs and Labels
+            rawData.centers.forEach((center, i) => {
+                // Trace Indices
+                const markerTraceIdx = 2 + (i * 2);
+                const lineTraceIdx = 3 + (i * 2);
+
+                // Update Marker Size
+                Plotly.restyle('graph', {'marker.size': pairSize}, [markerTraceIdx]);
+
+                // Calculate Label Coordinate
+                const vec = rawData.vectors[i];
+                const lx = vec.x * currentLabelRadius;
+                const ly = vec.y * currentLabelRadius;
+                const lz = vec.z * currentLabelRadius;
+
+                // Update Connector Line
+                Plotly.restyle('graph', {
+                    'x': [[center.x, lx]],
+                    'y': [[center.y, ly]],
+                    'z': [[center.z, lz]],
+                    'line.width': lineWidth,
+                    'opacity': lineOpacity
+                }, [lineTraceIdx]);
+
+                // Create Annotation
+                newAnnotations.push({
+                    x: lx, y: ly, z: lz,
+                    text: `Pair ${i+1}`,
+                    ax: 0, ay: 0,
+                    font: { size: fontSize, color: "black", family: "Arial" },
+                    bgcolor: "rgba(255, 255, 255, 0.7)",
+                    bordercolor: "#444",
+                    borderpad: 3,
+                    borderwidth: 1,
+                    captureevents: true
+                });
+            });
+
+            // Update Axis Fonts & Annotations
+            const newLayout = {
+                'scene.annotations': newAnnotations,
+                'scene.xaxis.tickfont.size': tickSize,
+                'scene.yaxis.tickfont.size': tickSize,
+                'scene.zaxis.tickfont.size': tickSize,
+                'scene.xaxis.title.font.size': titleSize,
+                'scene.yaxis.title.font.size': titleSize,
+                'scene.zaxis.title.font.size': titleSize,
+            };
+
+            Plotly.relayout('graph', newLayout);
+        }
+
+        function resetView() {
+            const update = {
+                'scene.camera': null
+            };
+            Plotly.relayout('graph', update);
+        }
+
+        // Attach Listeners
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', updatePlot);
+        });
+
+        // Initial update to sync everything
+        updatePlot();
+
+    </script>
+</body>
+</html>
