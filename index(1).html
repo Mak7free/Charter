@@ -1,10 +1,9 @@
-</html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Cell Rolling Simulation (Virtual Microscope)</title>
+    <title>3D Cell Rolling - Stable Turntable View</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #050505; }
@@ -13,7 +12,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(10, 10, 10, 0.9);
+            background: rgba(10, 10, 10, 0.95);
             color: white;
             padding: 20px;
             border-radius: 8px;
@@ -49,33 +48,34 @@
         #stats { margin-top: 10px; font-family: 'Courier New', monospace; color: #f0c040; font-size: 0.85rem; }
         .slider-container { display: flex; align-items: center; margin-top: 8px; }
         input[type=range] { flex: 1; margin-left: 10px; cursor: pointer; accent-color: #f0c040; }
+        #axis-label {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #00ff00;
+            font-family: monospace;
+            font-weight: bold;
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-       <nav style="background-color: #333; color: white; padding: 10px 0; text-align: center; font-family: Arial, sans-serif; border-bottom: 3px solid #444; margin-bottom: 0;">
-     <a href="index.html" style="background: rgba(255,255,255,0.9); border: 2px solid black; padding: 10px 20px; font-family: Arial, sans-serif; font-weight: bold; text-decoration: none; color: black; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
-    &larr; Back to Old Plot
-       </a>
-    <a href="index(1).html" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px; padding: 5px 10px; border: 1px solid #555; border-radius: 4px; background-color: #444;">
-        index(1).html
-    </a>
-    <a href="interactive_plot.html" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px; padding: 5px 10px; border: 1px solid #28a745; border-radius: 4px; background-color: #1e7e34;">
-        Interactive Dashboard
-    </a>
-</nav>
     <div id="ui-panel">
-        <h2>Experimental Setup</h2>
+        <h2>Inverted Microscope View</h2>
         
         <div class="control-group">
             <label>Laser Control</label>
             <button id="toggle-anim-btn" onclick="toggleAnimation()">Activate Laser</button>
             
             <div class="slider-container">
-                <label style="margin:0; min-width:70px;">Convection:</label>
+                <label style="margin:0; min-width:70px;">Rotation:</label>
                 <input type="range" min="0" max="0.05" step="0.001" value="0.01" id="roll-speed" oninput="updateSpeed()">
             </div>
              <div class="slider-container" style="margin-top:8px;">
-                <label style="margin:0; min-width:70px;">Cytoplasm:</label>
+                <label style="margin:0; min-width:70px;">Flow:</label>
                 <input type="range" min="0" max="2.0" step="0.1" value="1.0" id="flow-speed" oninput="updateSpeed()">
             </div>
         </div>
@@ -83,16 +83,16 @@
         <div class="control-group">
             <label>Visualization Key</label>
             <div class="legend-item">
-                <div class="dot" style="background: #FFD700; box-shadow: 0 0 5px #FFD700;"></div>
-                <span>Gold Substrate (Heated)</span>
+                <div class="dot" style="background: rgba(255, 215, 0, 0.4); border: 1px solid gold;"></div>
+                <span>Gold Substrate (Glass)</span>
             </div>
             <div class="legend-item">
-                <div class="dot" style="background: rgba(255, 50, 50, 0.8);"></div>
-                <span>Laser Beam (Heat Source)</span>
+                <div class="dot" style="background: rgba(255, 50, 50, 1.0); box-shadow: 0 0 5px red;"></div>
+                <span>Laser Beam (Z-Axis Source)</span>
             </div>
             <div class="legend-item">
                 <div class="dot" style="background: cyan; opacity: 0.5;"></div>
-                <span>Convection Current (Flow)</span>
+                <span>Convection Current</span>
             </div>
             <div class="legend-item">
                 <div class="dot" style="background: #0088ff;"></div>
@@ -105,11 +105,13 @@
         </div>
 
         <div class="info">
-            <p><strong>Mechanism:</strong> The Laser heats the Gold surface. Rising heat creates toroidal convection currents, forcing the cell to rotate.</p>
+            <p><strong>Orientation:</strong> The Z-Axis (Vertical) aligns with Light Propagation from the objective lens below.</p>
+            <p><strong>Control:</strong> Click & Drag to orbit the view.</p>
         </div>
         <div id="stats">System: Idle</div>
     </div>
     
+    <div id="axis-label">↑ Z-Axis (Light Propagation)</div>
     <div id="canvas-container"></div>
 
     <script>
@@ -145,24 +147,30 @@
         };
 
         // --- THREE.JS SETUP ---
-        let scene, camera, renderer, sphereGroup, stageGroup, laserBeam, convectionGroup;
+        let scene, camera, renderer;
+        let sphereGroup, stageGroup, laserBeam, convectionGroup;
         let isSimulating = false;
         let animatedParticles = []; 
         let convectionLines = [];
         let rollSpeed = 0.01;
         let flowMultiplier = 1.0;
+        let startTime = 0;
+
+        // Camera Orbit State
+        let cameraRadius = 60;
+        let cameraTheta = Math.PI / 4; // Horizontal angle
+        let cameraPhi = Math.PI / 3;   // Vertical angle (from Z axis)
         
         function init() {
             scene = new THREE.Scene();
-            // Dark environment for laser contrast
             scene.background = new THREE.Color(0x050505);
-            // Fog to give depth to the "liquid"
-            scene.fog = new THREE.FogExp2(0x050505, 0.015);
+            scene.fog = new THREE.FogExp2(0x050505, 0.01);
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            // Tilted view to show the surface and the cell
-            camera.position.set(30, 20, 40); 
-            camera.lookAt(0, 0, 0);
+            
+            // CRITICAL: Set Z as UP axis
+            camera.up.set(0, 0, 1);
+            updateCameraPosition();
             
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -173,14 +181,14 @@
             const ambientLight = new THREE.AmbientLight(0x222222, 1); 
             scene.add(ambientLight);
             
+            // Main Light from "Top" (relative to camera view usually, but let's place it logically)
             const spotLight = new THREE.SpotLight(0xffaa00, 2);
-            spotLight.position.set(50, 50, 50);
+            spotLight.position.set(50, 50, 80);
             spotLight.angle = Math.PI / 4;
-            spotLight.penumbra = 0.5;
             scene.add(spotLight);
 
             const blueBackLight = new THREE.DirectionalLight(0x0044ff, 1);
-            blueBackLight.position.set(-50, 20, -50);
+            blueBackLight.position.set(-50, -50, 20);
             scene.add(blueBackLight);
 
             // --- 1. ENVIRONMENT (The Stage) ---
@@ -188,42 +196,76 @@
             scene.add(stageGroup);
 
             // Gold Substrate (The Floor)
-            // Cell R=10.4. Floor at Z = -12 (Behind/Below)
+            // Z = -12. 
             const floorGeo = new THREE.PlaneGeometry(200, 200);
-            const floorMat = new THREE.MeshStandardMaterial({ 
-                color: 0xFFD700, // Gold
-                roughness: 0.4,
-                metalness: 0.8,
-                side: THREE.DoubleSide
+            const floorMat = new THREE.MeshPhysicalMaterial({ 
+                color: 0xFFD700, 
+                roughness: 0.2,
+                metalness: 0.1, 
+                transparent: true,
+                opacity: 0.2, 
+                side: THREE.DoubleSide,
+                transmission: 0.6
             });
             const floor = new THREE.Mesh(floorGeo, floorMat);
-            // Rotate to be XY plane behind the cell? 
-            // Previous logic: Cell rotates around X. Cell rolls on surface.
-            // If camera is looking from Z, surface is at Z = -R.
+            // In Three.js, PlaneGeometry is created in XY plane.
+            // We want it parallel to XY plane at Z = -12.
+            // So no rotation needed if Z is UP? 
+            // Wait, PlaneGeometry default normal is +Z. So it is ALREADY in XY plane.
             floor.position.z = -12; 
             stageGroup.add(floor);
 
+            // Grid helper
+            const grid = new THREE.GridHelper(100, 20, 0x554400, 0x222222);
+            // GridHelper creates grid in XZ plane (Y is up).
+            // We need grid in XY plane (Z is up).
+            grid.rotation.x = Math.PI / 2; 
+            grid.position.z = -12.05;
+            stageGroup.add(grid);
+
             // Laser Beam (Cylinder)
-            // Coming from "behind" the floor (Z < -12) and hitting the spot
-            const beamGeo = new THREE.CylinderGeometry(0.5, 4, 30, 32, 1, true);
+            // From Z < -12 to Surface
+            const beamGeo = new THREE.CylinderGeometry(0.5, 3, 50, 32, 1, true);
             const beamMat = new THREE.MeshBasicMaterial({ 
                 color: 0xff0000, 
                 transparent: true, 
-                opacity: 0.0, // Start invisible
+                opacity: 0.0, 
                 side: THREE.DoubleSide,
-                blending: THREE.AdditiveBlending
+                blending: THREE.AdditiveBlending,
+                depthWrite: false 
             });
             laserBeam = new THREE.Mesh(beamGeo, beamMat);
-            laserBeam.rotation.x = Math.PI / 2; // Point along Z
-            laserBeam.position.z = -27; // Originating from deep Z
+            // Cylinder default aligns with Y. 
+            // We want aligns with Z.
+            laserBeam.rotation.x = Math.PI / 2;
+            laserBeam.position.z = -37; 
             stageGroup.add(laserBeam);
 
-            // Hot Spot on Floor
-            const spotGeo = new THREE.CircleGeometry(3, 32);
-            const spotMat = new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.0 });
-            laserSpot = new THREE.Mesh(spotGeo, spotMat);
-            laserSpot.position.z = -11.9; // Just above floor
+            // Hot Spot
+            const spotGeo = new THREE.CircleGeometry(4, 32);
+            const spotMat = new THREE.MeshBasicMaterial({ 
+                color: 0xff4400, 
+                transparent: true, 
+                opacity: 0.0,
+                blending: THREE.AdditiveBlending 
+            });
+            const laserSpot = new THREE.Mesh(spotGeo, spotMat);
+            // Circle is XY plane by default. perfect.
+            laserSpot.position.z = -11.9; 
             stageGroup.add(laserSpot);
+            window.laserSpot = laserSpot; // Ref for anim
+
+            // Z-Axis Indicator (Green Arrow)
+            const dir = new THREE.Vector3(0, 0, 1);
+            const origin = new THREE.Vector3(0, 0, -15);
+            const length = 30;
+            const hex = 0x00ff00;
+            const arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex, 2, 1);
+            // Make it look like a "ray"
+            arrowHelper.line.material.linewidth = 2;
+            arrowHelper.line.material.transparent = true;
+            arrowHelper.line.material.opacity = 0.3;
+            stageGroup.add(arrowHelper);
 
 
             // --- 2. THE CELL ---
@@ -236,7 +278,8 @@
             const membraneGeo = new THREE.SphereGeometry(R, 64, 64);
             const membraneMat = new THREE.MeshPhysicalMaterial({ 
                 color: 0x88ccff, transparent: true, opacity: 0.1, 
-                roughness: 0.1, metalness: 0.1, transmission: 0.2, thickness: 1.0
+                roughness: 0.1, metalness: 0.1, transmission: 0.2, thickness: 1.0,
+                depthWrite: false
             });
             const cellSphere = new THREE.Mesh(membraneGeo, membraneMat);
             sphereGroup.add(cellSphere);
@@ -309,34 +352,26 @@
             convectionGroup = new THREE.Group();
             scene.add(convectionGroup);
 
-            // Create curved lines representing the vortex
             const curveCount = 12;
             for (let i = 0; i < curveCount; i++) {
                 const angle = (i / curveCount) * Math.PI * 2;
-                
-                // Elliptical path in YZ plane, rotated around center
-                // Actually, toroidal flow around the laser spot (Center)
-                // Flow rises in middle, moves out, falls down.
-                
-                // Let's make simple loops wrapping around the cell
                 const pts = [];
-                const radiusX = R + 5;
-                const radiusY = R + 8;
+                // Vertical Ovals in Planes rotated around Z
+                // For Torus, we rotate around Z (the laser axis)
+                // The loops themselves are in the plane of the Laser Axis and Radial line.
+                // Flow: Up near Z-axis, Out, Down far away, In.
                 
                 for(let j=0; j<=20; j++) {
                     const t = (j/20) * Math.PI * 2;
-                    // Toroidal winding?
-                    // Simple orbit for visualization
-                    const cx = Math.cos(angle) * (R + 4);
-                    const cy = Math.cos(t) * (R + 8);
-                    const cz = Math.sin(t) * (R + 4); // + offset
+                    // Oval cross section
+                    const r_offset = R + 4 + Math.cos(t) * 4; // Radial distance from Z axis
+                    const z_val = Math.sin(t) * 8; // Height variation
                     
-                    // Actually, let's just make vertical ovals that rotate
-                    pts.push(new THREE.Vector3(
-                        Math.cos(angle) * (R + 2 + Math.cos(t)*4),
-                        Math.sin(t) * (R + 6),
-                        Math.sin(angle) * (R + 2 + Math.cos(t)*4)
-                    ));
+                    const x = Math.cos(angle) * r_offset;
+                    const y = Math.sin(angle) * r_offset;
+                    const z = z_val;
+
+                    pts.push(new THREE.Vector3(x, y, z));
                 }
                 const curve = new THREE.CatmullRomCurve3(pts);
                 const tubGeo = new THREE.TubeGeometry(curve, 20, 0.15, 4, true);
@@ -354,6 +389,17 @@
             animate();
         }
 
+        function updateCameraPosition() {
+            // Spherical to Cartesian (Z up)
+            // x = r * sin(phi) * cos(theta)
+            // y = r * sin(phi) * sin(theta)
+            // z = r * cos(phi)
+            camera.position.x = cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+            camera.position.y = cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+            camera.position.z = cameraRadius * Math.cos(cameraPhi);
+            camera.lookAt(0, 0, 0);
+        }
+
         function updateSpeed() {
             rollSpeed = parseFloat(document.getElementById('roll-speed').value);
             flowMultiplier = parseFloat(document.getElementById('flow-speed').value);
@@ -369,9 +415,8 @@
                 btn.classList.add('active');
                 stats.innerText = "System: LASER ON | CONVECTION ACTIVE";
                 
-                // Visuals ON
-                laserBeam.material.opacity = 0.4;
-                laserSpot.material.opacity = 0.6;
+                laserBeam.material.opacity = 0.6;
+                window.laserSpot.material.opacity = 0.8;
                 convectionLines.forEach(l => l.mesh.material.opacity = 0.15);
                 
                 startTime = Date.now();
@@ -380,9 +425,8 @@
                 btn.classList.remove('active');
                 stats.innerText = "System: Idle";
                 
-                // Visuals OFF
                 laserBeam.material.opacity = 0.0;
-                laserSpot.material.opacity = 0.0;
+                window.laserSpot.material.opacity = 0.0;
                 convectionLines.forEach(l => l.mesh.material.opacity = 0.0);
                 
                 resetParticles();
@@ -402,13 +446,25 @@
 
             if (isSimulating) {
                 // 1. Roll the cell
+                // Rolling on ground means rotation axis is parallel to ground (XY)
+                // If convection goes "Out" at top and "In" at bottom...
+                // Let's say it rolls around X axis.
                 sphereGroup.rotation.x -= rollSpeed;
                 
-                // 2. Animate Convection Lines (Rotate them to simulate flow)
-                convectionGroup.rotation.x -= rollSpeed * 1.5; // Flow is faster than cell
+                // 2. Animate Convection Lines
+                // Rotate the texture/offset, not the group itself, to simulate flow along the tube?
+                // Or just rotate the group around the torus axis? 
+                // Torus axis is vertical circle.
+                // Let's just rotate the convection group around X to look busy.
+                // Actually, toroidal flow is internal.
+                // Simple trick: Just wobble them or rotate slightly.
+                // For visualization, rotating the whole group around Z makes it spin like a top.
+                // Rotating around X makes it tumble.
+                // Let's rotate around X to match cell roll.
+                convectionGroup.rotation.x -= rollSpeed * 1.5;
                 
                 // 3. Flicker Laser
-                laserBeam.material.opacity = 0.3 + Math.random() * 0.1;
+                laserBeam.material.opacity = 0.5 + Math.random() * 0.2;
 
                 // 4. Internal Particles
                 const now = Date.now();
@@ -441,15 +497,9 @@
                         }
                     }
                 });
-            } else {
-                // Idle Rotation (Entire stage)
-                // Use Scene rotation for camera orbit effect
-                // Actually, let's just rotate the camera pivot slightly
-                const time = Date.now() * 0.0005;
-                camera.position.x = Math.sin(time) * 30;
-                camera.position.y = 20 + Math.cos(time * 0.5) * 5;
-                camera.lookAt(0, 0, 0);
             }
+            
+            // NO IDLE ANIMATION - STABLE TURNTABLE
 
             renderer.render(scene, camera);
         }
@@ -460,30 +510,30 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Mouse Drag to Rotate View
+        // --- MOUSE ORBIT CONTROLS ---
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
+        
         document.addEventListener('mousedown', () => isDragging = true);
         document.addEventListener('mouseup', () => isDragging = false);
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
-                const deltaMove = {
+                const delta = {
                     x: e.offsetX - previousMousePosition.x,
                     y: e.offsetY - previousMousePosition.y
                 };
                 
-                // Simple orbit logic
-                // Rotate the SCENE/CAMERA relative
-                // Ideally use OrbitControls, but manual is fine for this demo
-                // We'll rotate the whole scene group except lights?
-                // Easiest is to rotate the root objects
-                stageGroup.rotation.y += deltaMove.x * 0.005;
-                sphereGroup.rotation.y += deltaMove.x * 0.005;
-                convectionGroup.rotation.y += deltaMove.x * 0.005;
+                // Update angles based on drag
+                // Drag X -> change Azimuth (Theta) - Rotate around Z
+                cameraTheta -= delta.x * 0.01;
                 
-                stageGroup.rotation.x += deltaMove.y * 0.005;
-                sphereGroup.rotation.x += deltaMove.y * 0.005;
-                convectionGroup.rotation.x += deltaMove.y * 0.005;
+                // Drag Y -> change Elevation (Phi) - Rotate up/down
+                cameraPhi -= delta.y * 0.01;
+                
+                // Clamp Phi to avoid flipping (stay above/below poles)
+                cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraPhi));
+                
+                updateCameraPosition();
             }
             previousMousePosition = { x: e.offsetX, y: e.offsetY };
         });
