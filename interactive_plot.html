@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8" />
     <title>Interactive 3D Cell Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
         /* --- LAYOUT & THEME --- */
-        body { 
-            margin: 0; padding: 0; 
+        body {
+            margin: 0;
+            padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex; flex-direction: column; 
-            height: 100vh; overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
             background-color: #f0f2f5;
         }
-        
+
         /* NAVIGATION */
         nav {
             background-color: #1a1a1a;
@@ -23,23 +27,41 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             z-index: 100;
             flex-shrink: 0;
         }
-        .nav-title { font-weight: 600; font-size: 15px; color: #e0e0e0; letter-spacing: 0.5px; }
+
+        .nav-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #e0e0e0;
+            letter-spacing: 0.5px;
+        }
+
         .nav-links a {
-            color: #888; text-decoration: none; font-size: 13px;
-            margin-left: 15px; padding: 14px 0;
+            color: #888;
+            text-decoration: none;
+            font-size: 13px;
+            margin-left: 15px;
+            padding: 14px 0;
             border-bottom: 2px solid transparent;
             transition: all 0.2s;
         }
-        .nav-links a:hover { color: white; }
-        .nav-links a.active { color: #3498db; border-bottom-color: #3498db; }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        .nav-links a.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
 
         /* MAIN CONTENT */
         #main-wrapper {
-            display: flex; flex-grow: 1;
+            display: flex;
+            flex-grow: 1;
             height: calc(100vh - 48px);
             overflow: hidden;
         }
@@ -51,116 +73,347 @@
             padding: 20px;
             overflow-y: auto;
             border-right: 1px solid #e1e4e8;
-            display: flex; flex-direction: column; gap: 20px;
-            box-shadow: 4px 0 12px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.03);
             z-index: 50;
         }
-        
-        #plot-container { flex-grow: 1; position: relative; background: #fff; }
-        #graph { width: 100%; height: 100%; }
+
+        #plot-container {
+            flex-grow: 1;
+            position: relative;
+            background: #fff;
+        }
+
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
 
         /* CONTROLS UI */
-        h3 { 
-            margin: 0; font-size: 14px; text-transform: uppercase; 
-            color: #5f6368; letter-spacing: 1px; border-bottom: 1px solid #eee; 
-            padding-bottom: 10px; display: flex; justify-content: space-between; 
+        h3 {
+            margin: 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #5f6368;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
-        
-        .control-group { 
-            background: #fff; 
+
+        .control-group {
+            background: #fff;
             padding-bottom: 10px;
             border-bottom: 1px dashed #eee;
         }
-        .control-group:last-child { border-bottom: none; }
-        
-        .control-header {
-            font-size: 13px; font-weight: 700; color: #333;
-            margin-bottom: 12px; display: flex; align-items: center;
-        }
-        .control-header::before {
-            content: ''; display: inline-block; width: 4px; height: 14px;
-            background: #3498db; margin-right: 8px; border-radius: 2px;
+
+        .control-group:last-child {
+            border-bottom: none;
         }
 
-        .input-row { margin-bottom: 12px; }
-        label { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 6px; }
-        
+        .control-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .control-header::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background: #3498db;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+
+        .input-row {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
         /* Checkbox Styling */
         .checkbox-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 8px; font-size: 12px; color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #333;
         }
-        .checkbox-row input { cursor: pointer; }
 
-        input[type=range] { 
-            width: 100%; margin: 0; cursor: pointer; height: 4px;
-            background: #dfe6e9; border-radius: 2px; appearance: none;
+        .checkbox-row input {
+            cursor: pointer;
         }
+
+        /* Form Elements */
+        input[type=range] {
+            width: 100%;
+            margin: 0;
+            cursor: pointer;
+            height: 4px;
+            background: #dfe6e9;
+            border-radius: 2px;
+            appearance: none;
+        }
+
         input[type=range]::-webkit-slider-thumb {
-            appearance: none; width: 16px; height: 16px; background: #3498db; 
-            border-radius: 50%; cursor: pointer; transition: background 0.15s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.15s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        input[type=range]::-webkit-slider-thumb:hover { background: #2980b9; transform: scale(1.1); }
-        
-        input[type=color] { 
-            width: 100%; height: 28px; border: 1px solid #dfe6e9; 
-            border-radius: 4px; cursor: pointer; padding: 2px;
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            background: #2980b9;
+            transform: scale(1.1);
         }
-        
-        span.value-display { font-family: monospace; color: #3498db; font-weight: bold; }
-        
-        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+
+        input[type=color] {
+            width: 100%;
+            height: 30px;
+            border: 1px solid #dfe6e9;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        select {
+            width: 100%;
+            height: 30px;
+            border: 1px solid #dfe6e9;
+            border-radius: 4px;
+            background: white;
+            color: #333;
+            font-size: 12px;
+            padding-left: 5px;
+            cursor: pointer;
+        }
+
+        span.value-display {
+            font-family: monospace;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
 
         button.action-btn {
-            width: 100%; padding: 10px; background: #f1f3f4; color: #333; 
-            border: 1px solid #dcdfe6; border-radius: 6px; cursor: pointer; 
-            font-size: 13px; font-weight: 600; transition: all 0.2s;
+            width: 100%;
+            padding: 10px;
+            background: #f1f3f4;
+            color: #333;
+            border: 1px solid #dcdfe6;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
         }
-        button.action-btn:hover { background: #e8eaed; border-color: #c0c4cc; }
-        
+
+        button.action-btn:hover {
+            background: #e8eaed;
+            border-color: #c0c4cc;
+        }
+
         button.primary-btn {
-            background: #3498db; color: white; border: none; width: 100%;
-            padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
+            background: #3498db;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
         }
-        button.primary-btn:hover { background: #2980b9; }
+
+        button.primary-btn:hover {
+            background: #2980b9;
+        }
 
         button.help-btn {
-            background: #3498db; color: white; border: none; 
-            border-radius: 12px; width: 20px; height: 20px; 
-            font-size: 12px; cursor: pointer;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
         }
 
-        /* OVERLAYS (Tour & Preview) */
+        /* OVERLAYS */
         .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 2000;
-            display: none; justify-content: center; align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
             backdrop-filter: blur(4px);
         }
-        .modal-box {
-            background: white; width: 450px; padding: 30px; border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative;
-        }
-        .modal-large { width: 80%; height: 90%; display: flex; flex-direction: column; }
-        
-        .modal-close {
-            position: absolute; top: 15px; right: 20px; cursor: pointer;
-            font-size: 24px; color: #aaa; transition: color 0.2s;
-        }
-        .modal-close:hover { color: #333; }
 
-        /* Preview Modal Specifics */
-        #preview-content {
-            flex-grow: 1; background: #333; margin: 20px 0;
-            display: flex; align-items: center; justify-content: center;
-            overflow: auto; border-radius: 4px;
+        .modal-box {
+            background: white;
+            width: 450px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
-        #preview-img { max-width: 100%; max-height: 100%; box-shadow: 0 0 20px #000; }
-        .preview-controls { display: flex; gap: 15px; justify-content: center; }
+
+        .modal-large {
+            width: 80%;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            color: #aaa;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        #preview-content {
+            flex-grow: 1;
+            background: #333;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            border-radius: 4px;
+        }
+
+        #preview-img {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 20px #000;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        /* GRADIENT PALETTE SELECTOR */
+        .gradient-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .gradient-option {
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid #dfe6e9;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gradient-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .gradient-option.selected {
+            border-color: #3498db;
+            border-width: 3px;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .gradient-option .gradient-label {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        /* Gradient backgrounds */
+        .gradient-viridis {
+            background: linear-gradient(to right, #440154, #31688e, #35b779, #fde724);
+        }
+
+        .gradient-plasma {
+            background: linear-gradient(to right, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921);
+        }
+
+        .gradient-jet {
+            background: linear-gradient(to right, #00007f, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000, #7f0000);
+        }
+
+        .gradient-rdbu {
+            background: linear-gradient(to right, #67001f, #d6604d, #f4a582, #92c5de, #4393c3, #053061);
+        }
+
+        .gradient-hot {
+            background: linear-gradient(to right, #000000, #ff0000, #ffff00, #ffffff);
+        }
+
+        .gradient-custom {
+            background: linear-gradient(to right, #3498db, #e74c3c);
+            position: relative;
+        }
+
+        .gradient-custom::before {
+            content: '+';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: white;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
+
 <body>
 
     <nav>
@@ -175,10 +428,12 @@
             <h3>Configuration <button class="help-btn" onclick="toggleTour()">?</button></h3>
 
             <div class="control-group">
-                <div class="control-header">Global Scale & View</div>
+                <div class="control-header">View & Zoom</div>
                 <div class="input-row">
-                    <label>Scale (Zoom & Axes): <span id="val-sphere-scale" class="value-display">1.0</span></label>
-                    <input type="range" id="sphere-scale" min="0.5" max="2.0" step="0.1" value="1.0">
+                    <label>Zoom Factor: <span id="val-sphere-scale" class="value-display">1.0</span></label>
+                    <input type="range" id="sphere-scale" min="0.5" max="5.0" step="0.1" value="1.0">
+                    <small style="font-size:10px; color:#666; margin-top:4px; display:block;">Higher = Closer view (axis
+                        range decreases)</small>
                 </div>
                 <div class="checkbox-row">
                     <label for="show-arrows">Show Connector Arrows</label>
@@ -191,13 +446,40 @@
             </div>
 
             <div class="control-group">
-                <div class="control-header">Appearance</div>
+                <div class="control-header">Membrane Appearance</div>
                 <div class="input-row">
-                    <label>Membrane Transparency: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
+                    <label>Membrane Opacity: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
                     <input type="range" id="sphere-opacity" min="0" max="1" step="0.05" value="0.1">
                 </div>
                 <div class="input-row">
-                    <label>Membrane Color</label>
+                    <label>Marker Opacity: <span id="val-marker-opacity" class="value-display">0.8</span></label>
+                    <input type="range" id="marker-opacity" min="0" max="1" step="0.05" value="0.8">
+                </div>
+                <div class="input-row">
+                    <label>Color Style</label>
+                    <div class="gradient-selector">
+                        <div class="gradient-option selected" data-style="solid" style="background: #FFC8DC;">
+                            <span class="gradient-label">Solid</span>
+                        </div>
+                        <div class="gradient-option gradient-viridis" data-style="Viridis">
+                            <span class="gradient-label">Viridis</span>
+                        </div>
+                        <div class="gradient-option gradient-plasma" data-style="Plasma">
+                            <span class="gradient-label">Plasma</span>
+                        </div>
+                        <div class="gradient-option gradient-jet" data-style="Jet">
+                            <span class="gradient-label">Jet</span>
+                        </div>
+                        <div class="gradient-option gradient-rdbu" data-style="RdBu">
+                            <span class="gradient-label">Red-Blue</span>
+                        </div>
+                        <div class="gradient-option gradient-hot" data-style="Hot">
+                            <span class="gradient-label">Hot</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-row" id="solid-color-container">
+                    <label>Solid Color Picker</label>
                     <input type="color" id="sphere-color" value="#FFC8DC">
                 </div>
             </div>
@@ -216,9 +498,21 @@
 
             <div class="control-group">
                 <div class="control-header">Layout & Legend</div>
-                <div class="input-row">
+                <div class="input-row" id="label-expansion-container">
                     <label>Label Expansion: <span id="val-label-dist" class="value-display">1.0</span></label>
                     <input type="range" id="label-dist" min="0.8" max="2.0" step="0.05" value="1.0">
+                </div>
+                <div class="input-row">
+                    <label>Label Font Size: <span id="val-font-size" class="value-display">11</span></label>
+                    <input type="range" id="font-size" min="8" max="24" step="1" value="11">
+                </div>
+                <div class="input-row">
+                    <label>Legend Font Size: <span id="val-legend-font-size" class="value-display">12</span></label>
+                    <input type="range" id="legend-font-size" min="8" max="24" step="1" value="12">
+                </div>
+                <div class="input-row">
+                    <label>Axis Text Size: <span id="val-tick-size" class="value-display">20</span></label>
+                    <input type="range" id="tick-size" min="10" max="40" step="1" value="20">
                 </div>
                 <div class="input-row">
                     <label>Legend X Position: <span id="val-legend-x" class="value-display">0.85</span></label>
@@ -247,12 +541,12 @@
         <div class="modal-box" onclick="event.stopPropagation()">
             <span class="modal-close" onclick="toggleTour()">&times;</span>
             <h2>Dashboard Guide</h2>
-            <p><strong>New Features:</strong></p>
             <ul>
-                <li><strong>Scale (Zoom):</strong> Scaling now changes the sphere size, marker sizes, AND axes ranges proportionally.</li>
-                <li><strong>Toggles:</strong> Turn off arrows or labels using the checkboxes.</li>
-                <li><strong>Legend:</strong> Move the legend using X/Y sliders to clear up space.</li>
-                <li><strong>Export Preview:</strong> Click "Preview Export" to generate A4 or PPT snapshots.</li>
+                <li><strong>Scale (Zoom):</strong> Scaling changes the sphere, markers, and axes proportionally.</li>
+                <li><strong>Gradients:</strong> Select "Gradient" in the dropdown to color the sphere by Z-height.</li>
+                <li><strong>Toggles:</strong> Hide arrows or text labels easily.</li>
+                <li><strong>Restored Controls:</strong> Font size and Axis text size controls are back.</li>
+                <li><strong>Export:</strong> Click "Preview Export" for publication-ready images.</li>
             </ul>
             <button class="primary-btn" onclick="toggleTour()">Got it</button>
         </div>
@@ -262,13 +556,12 @@
         <div class="modal-box modal-large" onclick="event.stopPropagation()">
             <span class="modal-close" onclick="closePreview()">&times;</span>
             <h2 style="margin-top:0">Publication Preview</h2>
-            <p style="margin: 0 0 10px 0; color:#666">Select a format to generate a static snapshot of your current view.</p>
-            
             <div class="preview-controls">
-                <button class="action-btn" style="width:auto" onclick="generateSnapshot('ppt')">16:9 Presentation (PPT)</button>
-                <button class="action-btn" style="width:auto" onclick="generateSnapshot('a4')">A4 Paper (Vertical)</button>
+                <button class="action-btn" style="width:auto" onclick="generateSnapshot('ppt')">16:9 Presentation
+                    (PPT)</button>
+                <button class="action-btn" style="width:auto" onclick="generateSnapshot('a4')">A4 Paper
+                    (Vertical)</button>
             </div>
-
             <div id="preview-content">
                 <p style="color:white; font-size:14px; opacity:0.5">Select a format above to render...</p>
                 <img id="preview-img" src="" style="display:none">
@@ -280,65 +573,71 @@
         // --- 1. DATA DEFINITION ---
         const rawData = {
             centers: [
-                {x: 0.4955, y: 1.8880, z: -2.1130}, 
-                {x: 1.4530, y: -4.5535, z: -0.7318}, 
-                {x: 0.8735, y: 2.2900, z: -1.8457}, 
-                {x: 4.2345, y: 5.5730, z: 1.4450},  
-                {x: 0.9230, y: -1.7975, z: 0.4948},  
-                {x: 1.4465, y: 1.9470, z: -1.9415},  
-                {x: -7.3545, y: -0.3885, z: 1.5013}, 
-                {x: 1.7735, y: -3.5050, z: -0.2461}  
+                { x: 0.4955, y: 1.8880, z: -2.1130 },
+                { x: 1.4530, y: -4.5535, z: -0.7318 },
+                { x: 0.8735, y: 2.2900, z: -1.8457 },
+                { x: 4.2345, y: 5.5730, z: 1.4450 },
+                { x: 0.9230, y: -1.7975, z: 0.4948 },
+                { x: 1.4465, y: 1.9470, z: -1.9415 },
+                { x: -7.3545, y: -0.3885, z: 1.5013 },
+                { x: 1.7735, y: -3.5050, z: -0.2461 }
             ],
             vectors: [
-                 {x: -0.638, y: 0.091, z: -0.697},
-                 {x: -0.199, y: -0.988, z: -0.112},
-                 {x: -0.063, y: 0.999, z: -0.223},
-                 {x: 0.099, y: 0.657, z: 0.781},
-                 {x: 0.492, y: -0.564, z: 0.707},
-                 {x: 0.903, y: 0.489, z: 0.037},
-                 {x: -0.801, y: -0.111, z: 0.622},
-                 {x: 0.780, y: -0.507, z: -0.405}
+                { x: -0.638, y: 0.091, z: -0.697 },
+                { x: -0.199, y: -0.988, z: -0.112 },
+                { x: -0.063, y: 0.999, z: -0.223 },
+                { x: 0.099, y: 0.657, z: 0.781 },
+                { x: 0.492, y: -0.564, z: 0.707 },
+                { x: 0.903, y: 0.489, z: 0.037 },
+                { x: -0.801, y: -0.111, z: 0.622 },
+                { x: 0.780, y: -0.507, z: -0.405 }
             ],
             baseRadius: 10.4,
-            baseAxisRange: 15 // Standard range to keep proportions
+            baseAxisRange: 15
         };
 
-        // --- 2. INITIALIZATION ---
+        // Indices
         const SPHERE_IDX = 0;
         const SINGLE_IDX = 1;
         const MARKER_INDICES = rawData.centers.map((_, i) => 2 + (i * 2));
         const LINE_INDICES = rawData.centers.map((_, i) => 3 + (i * 2));
 
+        // Initial Data Setup
         var data = [
             {
-                type: "mesh3d", alphahull: 0, color: "rgb(255, 200, 220)", opacity: 0.1,
+                type: "mesh3d", alphahull: 0,
+                color: "#FFC8DC", opacity: 0.1,
                 name: "Cell Membrane", hoverinfo: "skip", x: [], y: [], z: []
             },
             {
                 type: "scatter3d", mode: "markers", name: "Single Points",
                 marker: { color: "#666666", opacity: 0.5, size: 5, symbol: "circle" },
-                x: [0.37, 4.39, -1.32, -0.20, -3.47, -1.60, 2.80, 3.37, -5.37, -4.25, -2.41],
-                y: [6.75, 8.24, -2.10, -3.27, 1.07, 1.25, 3.30, -2.22, -3.99, -2.94, -9.00],
-                z: [1.30, 1.49, 1.13, 0.71, -1.09, -0.77, -0.35, 0.53, 1.50, 0.96, 1.46]
+                x: [], y: [], z: [] // Will be populated in updateGraphLogic
             }
         ];
 
+        const baseSinglePoints = {
+            x: [0.37, 4.39, -1.32, -0.20, -3.47, -1.60, 2.80, 3.37, -5.37, -4.25, -2.41],
+            y: [6.75, 8.24, -2.10, -3.27, 1.07, 1.25, 3.30, -2.22, -3.99, -2.94, -9.00],
+            z: [1.30, 1.49, 1.13, 0.71, -1.09, -0.77, -0.35, 0.53, 1.50, 0.96, 1.46]
+        };
+
         const colors = ['#E6194B', '#3CB44B', '#4363D8', '#F58231', '#911EB4', '#42D4F4', '#F032E6', '#bfef45'];
         const pairsData = [
-            {p1: [0.52, 1.88, -2.15], p2: [0.48, 1.89, -2.07], dist: "0.09"},
-            {p1: [1.31, -4.55, -0.72], p2: [1.60, -4.56, -0.74], dist: "0.29"},
-            {p1: [0.64, 2.25, -1.98], p2: [1.10, 2.32, -1.71], dist: "0.54"},
-            {p1: [3.90, 5.69, 1.39], p2: [4.57, 5.46, 1.50], dist: "0.72"},
-            {p1: [1.05, -1.46, 0.36], p2: [0.80, -2.13, 0.63], dist: "0.76"},
-            {p1: [1.03, 1.82, -1.97], p2: [1.86, 2.07, -1.91], dist: "0.87"},
-            {p1: [-7.03, -0.86, 1.50], p2: [-7.68, 0.08, 1.50], dist: "1.13"},
-            {p1: [1.69, -4.09, -0.55], p2: [1.86, -2.92, 0.06], dist: "1.33"}
+            { p1: [0.52, 1.88, -2.15], p2: [0.48, 1.89, -2.07], dist: "0.09" },
+            { p1: [1.31, -4.55, -0.72], p2: [1.60, -4.56, -0.74], dist: "0.29" },
+            { p1: [0.64, 2.25, -1.98], p2: [1.10, 2.32, -1.71], dist: "0.54" },
+            { p1: [3.90, 5.69, 1.39], p2: [4.57, 5.46, 1.50], dist: "0.72" },
+            { p1: [1.05, -1.46, 0.36], p2: [0.80, -2.13, 0.63], dist: "0.76" },
+            { p1: [1.03, 1.82, -1.97], p2: [1.86, 2.07, -1.91], dist: "0.87" },
+            { p1: [-7.03, -0.86, 1.50], p2: [-7.68, 0.08, 1.50], dist: "1.13" },
+            { p1: [1.69, -4.09, -0.55], p2: [1.86, -2.92, 0.06], dist: "1.33" }
         ];
 
         pairsData.forEach((p, i) => {
             data.push({
                 type: "scatter3d", mode: "markers+lines",
-                name: `Pair ${i+1}`,
+                name: `Pair ${i + 1}`,
                 marker: { size: 8, color: colors[i], symbol: i < 4 ? 'square' : 'circle' },
                 line: { width: 4, color: colors[i] },
                 x: [p.p1[0], p.p2[0]], y: [p.p1[1], p.p2[1]], z: [p.p1[2], p.p2[2]]
@@ -346,7 +645,7 @@
             data.push({
                 type: "scatter3d", mode: "lines", showlegend: false,
                 line: { color: "gray", width: 2 }, hoverinfo: "skip",
-                x: [0, 0], y: [0, 0], z: [0, 0] 
+                x: [0, 0], y: [0, 0], z: [0, 0]
             });
         });
 
@@ -357,165 +656,267 @@
             legend: { x: 0.85, y: 0.9, bgcolor: "rgba(255,255,255,0.8)", bordercolor: "black", borderwidth: 1 },
             scene: {
                 aspectmode: "cube",
-                // Dynamic ranges will be set in updateGraphLogic
-                xaxis: { title: "X (µm)", range: [-15, 15] },
-                yaxis: { title: "Y (µm)", range: [-15, 15] },
-                zaxis: { title: "Z (µm)", range: [-15, 15] },
-                annotations: [] 
+                xaxis: { title: { text: "X (μm)", font: { size: 20 } }, tickfont: { size: 20 }, range: [-15, 15] },
+                yaxis: { title: { text: "Y (μm)", font: { size: 20 } }, tickfont: { size: 20 }, range: [-15, 15] },
+                zaxis: { title: { text: "Z (μm)", font: { size: 20 } }, tickfont: { size: 20 }, range: [-15, 15] },
+                annotations: []
             }
         };
 
         function generateSphere(radius) {
             const u = [], v = [];
-            for(let i=0; i<=20; i++) u.push(i * Math.PI / 20);
-            for(let j=0; j<=40; j++) v.push(j * 2 * Math.PI / 40);
-            
-            const x=[], y=[], z=[];
-            for(let i=0; i<u.length; i++) {
-                for(let j=0; j<v.length; j++) {
+            for (let i = 0; i <= 20; i++) u.push(i * Math.PI / 20);
+            for (let j = 0; j <= 40; j++) v.push(j * 2 * Math.PI / 40);
+
+            const x = [], y = [], z = [];
+            for (let i = 0; i < u.length; i++) {
+                for (let j = 0; j < v.length; j++) {
                     x.push(radius * Math.sin(u[i]) * Math.cos(v[j]));
                     y.push(radius * Math.sin(u[i]) * Math.sin(v[j]));
                     z.push(radius * Math.cos(u[i]));
                 }
             }
-            return {x, y, z};
+            return { x, y, z };
         }
 
         const initialSphere = generateSphere(rawData.baseRadius);
         data[0].x = initialSphere.x; data[0].y = initialSphere.y; data[0].z = initialSphere.z;
 
-        Plotly.newPlot('graph', data, layout, {responsive: true});
+        Plotly.newPlot('graph', data, layout, { responsive: true });
 
-        // --- 3. LOGIC UPDATES ---
-        
+        // --- UPDATE LOGIC ---
         function debounce(func, wait) {
             let timeout;
-            return function(...args) {
+            return function (...args) {
                 const context = this;
                 clearTimeout(timeout);
                 timeout = setTimeout(() => func.apply(context, args), wait);
             };
         }
 
+        // Global state for selected gradient style
+        let selectedGradientStyle = 'solid';
+
         function updateGraphLogic() {
-            // 1. GATHER INPUTS
+            // Inputs
             const sphereOpacity = parseFloat(document.getElementById('sphere-opacity').value);
+            const markerOpacity = parseFloat(document.getElementById('marker-opacity').value);
             const sphereColor = document.getElementById('sphere-color').value;
-            const globalScale = parseFloat(document.getElementById('sphere-scale').value); // This is now Global Scale
+            const sphereStyle = selectedGradientStyle;
+
+            const zoomFactor = parseFloat(document.getElementById('sphere-scale').value);
             const pairSize = parseInt(document.getElementById('pair-size').value);
             const singleSize = parseInt(document.getElementById('single-size').value);
             const labelDistMult = parseFloat(document.getElementById('label-dist').value);
-            
+
+            // Restored Inputs
+            const fontSize = parseInt(document.getElementById('font-size').value);
+            const legendFontSize = parseInt(document.getElementById('legend-font-size').value);
+            const tickSize = parseInt(document.getElementById('tick-size').value);
+
             const legendX = parseFloat(document.getElementById('legend-x').value);
             const legendY = parseFloat(document.getElementById('legend-y').value);
-            
+
             const showArrows = document.getElementById('show-arrows').checked;
             const showLabels = document.getElementById('show-labels').checked;
 
-            // 2. PRE-CALCULATE SCALED VALUES
-            
-            // A. Scale the Sphere Geometry
-            const newRadius = rawData.baseRadius * globalScale;
-            const sphereMesh = generateSphere(newRadius);
-            
-            // B. Scale the Marker Sizes (Pixel size * scale factor)
-            // This ensures markers look larger when we "zoom" by scaling the object
-            const scaledPairSize = pairSize * globalScale;
-            const scaledSingleSize = singleSize * globalScale;
-            
-            // C. Scale the Axis Ranges 
-            // If the sphere gets bigger, the axes must get bigger to fit it, 
-            // maintaining the visual proportion.
-            const newRangeLimit = rawData.baseAxisRange * globalScale;
-            const newRange = [-newRangeLimit, newRangeLimit];
+            // UI Logic: Toggle Label Expansion Slider
+            const labelExpContainer = document.getElementById('label-expansion-container');
+            if (labelExpContainer) {
+                labelExpContainer.style.display = showLabels ? 'block' : 'none';
+            }
 
-            const currentLabelRadius = newRadius * 1.35 * labelDistMult; 
+            // PHYSICS-BASED ZOOM CALCULATIONS
+            // Zoom works like moving camera closer:
+            // - Axis range DECREASES (inverse of zoom)
+            // - Objects appear LARGER (scale by zoom factor)
+
+            const displayedRadius = rawData.baseRadius * zoomFactor;
+            const sphereMesh = generateSphere(displayedRadius);
+
+            const displayedPairSize = pairSize * zoomFactor;
+            const displayedSingleSize = singleSize * zoomFactor;
+
+            // Axis range contracts when zooming in (inverse scaling)
+            const displayedAxisRange = rawData.baseAxisRange / zoomFactor;
+            const newRange = [-displayedAxisRange, displayedAxisRange];
+            const currentLabelRadius = displayedRadius * 1.35 * labelDistMult;
+
             const lineX = [], lineY = [], lineZ = [];
             const newAnnotations = [];
 
-            // 3. GENERATE LINES & ANNOTATIONS
+            // Scale Single Points by zoom factor
+            const scaledSingleX = baseSinglePoints.x.map(x => x * zoomFactor);
+            const scaledSingleY = baseSinglePoints.y.map(y => y * zoomFactor);
+            const scaledSingleZ = baseSinglePoints.z.map(z => z * zoomFactor);
+
+            // Scale Pairs by zoom factor
+            const pairX = [], pairY = [], pairZ = [];
+            pairsData.forEach((p) => {
+                const p1 = p.p1.map(c => c * zoomFactor);
+                const p2 = p.p2.map(c => c * zoomFactor);
+                pairX.push([p1[0], p2[0]]);
+                pairY.push([p1[1], p2[1]]);
+                pairZ.push([p1[2], p2[2]]);
+            });
+
+            // Lines & Labels (using scaled centers)
             rawData.centers.forEach((center, i) => {
+                const scaledCenter = {
+                    x: center.x * zoomFactor,
+                    y: center.y * zoomFactor,
+                    z: center.z * zoomFactor
+                };
+
                 const vec = rawData.vectors[i];
                 const lx = vec.x * currentLabelRadius;
                 const ly = vec.y * currentLabelRadius;
                 const lz = vec.z * currentLabelRadius;
 
-                lineX.push([center.x, lx]);
-                lineY.push([center.y, ly]);
-                lineZ.push([center.z, lz]);
+                lineX.push([scaledCenter.x, lx]);
+                lineY.push([scaledCenter.y, ly]);
+                lineZ.push([scaledCenter.z, lz]);
 
                 if (showLabels) {
                     newAnnotations.push({
                         x: lx, y: ly, z: lz,
-                        text: `Pair ${i+1}`,
+                        text: `Pair ${i + 1}`,
                         ax: 0, ay: 0,
-                        font: { size: 12, color: "black", family: "Arial" },
+                        font: { size: fontSize, color: "black", family: "Arial" },
                         bgcolor: "rgba(255, 255, 255, 0.7)",
                         bordercolor: "#444", borderpad: 3, borderwidth: 1
                     });
                 }
             });
 
-            // 4. APPLY UPDATES
-            
-            // A. Sphere
-            Plotly.restyle('graph', {
+            // Update Sphere (Solid vs Gradient Logic)
+            let sphereUpdate = {
                 'opacity': sphereOpacity,
-                'color': sphereColor,
                 'x': [sphereMesh.x], 'y': [sphereMesh.y], 'z': [sphereMesh.z]
-            }, [SPHERE_IDX]);
+            };
 
-            // B. Single Points (Scaled Size)
-            Plotly.restyle('graph', { 'marker.size': scaledSingleSize }, [SINGLE_IDX]);
+            const solidColorContainer = document.getElementById('solid-color-container');
 
-            // C. Pair Markers (Scaled Size)
-            Plotly.restyle('graph', { 'marker.size': scaledPairSize }, MARKER_INDICES);
+            if (sphereStyle === 'solid') {
+                sphereUpdate.color = sphereColor;
+                sphereUpdate.colorscale = null;
+                sphereUpdate.intensity = null;
+                sphereUpdate.showscale = false;
+                solidColorContainer.style.display = 'block';
+            } else {
+                sphereUpdate.color = null;
+                sphereUpdate.colorscale = sphereStyle;
+                sphereUpdate.intensity = [sphereMesh.z];
+                sphereUpdate.showscale = false;
+                solidColorContainer.style.display = 'none';
+            }
 
-            // D. Lines (Visibility + Geometry)
-            // If showArrows is false, set visible: false, otherwise true
-            Plotly.restyle('graph', { 
+            Plotly.restyle('graph', sphereUpdate, [SPHERE_IDX]);
+
+            // Update Single Points
+            Plotly.restyle('graph', {
+                'x': [scaledSingleX],
+                'y': [scaledSingleY],
+                'z': [scaledSingleZ],
+                'marker.size': displayedSingleSize,
+                'marker.opacity': markerOpacity
+            }, [SINGLE_IDX]);
+
+            // Update Pairs
+            Plotly.restyle('graph', {
+                'x': pairX, 'y': pairY, 'z': pairZ,
+                'marker.size': displayedPairSize,
+                'marker.opacity': markerOpacity
+            }, MARKER_INDICES);
+
+            // Update Connector Lines
+            Plotly.restyle('graph', {
                 'x': lineX, 'y': lineY, 'z': lineZ,
                 'visible': showArrows
             }, LINE_INDICES);
 
-            // E. Layout (Axes, Legend, Annotations)
+            // Update Layout
             Plotly.relayout('graph', {
                 'scene.annotations': newAnnotations,
                 'scene.xaxis.range': newRange,
                 'scene.yaxis.range': newRange,
                 'scene.zaxis.range': newRange,
+                'scene.xaxis.tickfont.size': tickSize,
+                'scene.yaxis.tickfont.size': tickSize,
+                'scene.zaxis.tickfont.size': tickSize,
+                'scene.xaxis.title.font.size': tickSize + 4,
+                'scene.yaxis.title.font.size': tickSize + 4,
+                'scene.zaxis.title.font.size': tickSize + 4,
                 'legend.x': legendX,
-                'legend.y': legendY
+                'legend.y': legendY,
+                'legend.font.size': legendFontSize
             });
         }
 
         const debouncedUpdate = debounce(updateGraphLogic, 50);
 
         function handleInput(e) {
-            const spanId = 'val-' + e.target.id;
-            const span = document.getElementById(spanId);
-            if(span) span.textContent = e.target.value;
+            // Update Number Displays
+            if (e.target.type === 'range') {
+                const spanId = 'val-' + e.target.id;
+                const span = document.getElementById(spanId);
+                if (span) span.textContent = e.target.value;
+            }
             debouncedUpdate();
         }
 
-        document.querySelectorAll('input').forEach(input => {
+        document.querySelectorAll('input, select').forEach(input => {
             input.addEventListener('input', handleInput);
         });
 
+        // Gradient palette selector handling
+        document.querySelectorAll('.gradient-option').forEach(option => {
+            option.addEventListener('click', function () {
+                // Remove selected class from all
+                document.querySelectorAll('.gradient-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // Add to clicked
+                this.classList.add('selected');
+
+                // Update selected style
+                selectedGradientStyle = this.getAttribute('data-style');
+
+                // Update solid color preview if solid is selected
+                if (selectedGradientStyle === 'solid') {
+                    const currentColor = document.getElementById('sphere-color').value;
+                    this.style.background = currentColor;
+                }
+
+                // Trigger update
+                updateGraphLogic();
+            });
+        });
+
+        // Update solid color swatch when color picker changes
+        document.getElementById('sphere-color').addEventListener('input', function () {
+            const solidOption = document.querySelector('.gradient-option[data-style="solid"]');
+            if (solidOption) {
+                solidOption.style.background = this.value;
+            }
+        });
+
+        // Initialize with default values
+        updateGraphLogic();
+
         function resetView() {
-            Plotly.relayout('graph', {'scene.camera': null});
+            Plotly.relayout('graph', { 'scene.camera': null });
         }
 
-        // --- OVERLAY LOGIC ---
         function toggleTour() {
             const modal = document.getElementById('tour-overlay');
             modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
         }
-        
+
         function openPreview() {
             document.getElementById('preview-overlay').style.display = 'flex';
         }
-        
+
         function closePreview() {
             document.getElementById('preview-overlay').style.display = 'none';
         }
@@ -523,35 +924,23 @@
         function generateSnapshot(format) {
             const imgEl = document.getElementById('preview-img');
             const graphDiv = document.getElementById('graph');
-            
-            // Hide image and show text
+
             imgEl.style.display = 'none';
             imgEl.previousElementSibling.innerText = "Generating Snapshot...";
             imgEl.previousElementSibling.style.display = 'block';
 
             let width, height;
+            if (format === 'ppt') { width = 1280; height = 720; }
+            else { width = 794; height = 1123; }
 
-            if(format === 'ppt') {
-                // 16:9 HD
-                width = 1280; 
-                height = 720; 
-            } else {
-                // A4 approx (vertical)
-                width = 794; 
-                height = 1123; 
-            }
-
-            Plotly.toImage(graphDiv, {format: 'png', width: width, height: height})
-                .then(function(dataUrl) {
+            Plotly.toImage(graphDiv, { format: 'png', width: width, height: height })
+                .then(function (dataUrl) {
                     imgEl.src = dataUrl;
                     imgEl.style.display = 'block';
                     imgEl.previousElementSibling.style.display = 'none';
-                })
-                .catch(function(err) {
-                    console.error("Snapshot error:", err);
-                    imgEl.previousElementSibling.innerText = "Error generating image.";
                 });
         }
     </script>
 </body>
+
 </html>
