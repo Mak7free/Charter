@@ -46,7 +46,7 @@
 
         /* SIDEBAR */
         #controls {
-            width: 300px;
+            width: 320px;
             background: #ffffff;
             padding: 20px;
             overflow-y: auto;
@@ -69,7 +69,10 @@
         
         .control-group { 
             background: #fff; 
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #eee;
         }
+        .control-group:last-child { border-bottom: none; }
         
         .control-header {
             font-size: 13px; font-weight: 700; color: #333;
@@ -83,6 +86,13 @@
         .input-row { margin-bottom: 12px; }
         label { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 6px; }
         
+        /* Checkbox Styling */
+        .checkbox-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; font-size: 12px; color: #333;
+        }
+        .checkbox-row input { cursor: pointer; }
+
         input[type=range] { 
             width: 100%; margin: 0; cursor: pointer; height: 4px;
             background: #dfe6e9; border-radius: 2px; appearance: none;
@@ -101,12 +111,20 @@
         
         span.value-display { font-family: monospace; color: #3498db; font-weight: bold; }
         
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+
         button.action-btn {
             width: 100%; padding: 10px; background: #f1f3f4; color: #333; 
             border: 1px solid #dcdfe6; border-radius: 6px; cursor: pointer; 
             font-size: 13px; font-weight: 600; transition: all 0.2s;
         }
         button.action-btn:hover { background: #e8eaed; border-color: #c0c4cc; }
+        
+        button.primary-btn {
+            background: #3498db; color: white; border: none; width: 100%;
+            padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
+        }
+        button.primary-btn:hover { background: #2980b9; }
 
         button.help-btn {
             background: #3498db; color: white; border: none; 
@@ -114,30 +132,33 @@
             font-size: 12px; cursor: pointer;
         }
 
-        /* TOUR OVERLAY */
-        #tour-overlay {
+        /* OVERLAYS (Tour & Preview) */
+        .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 2000;
+            background: rgba(0,0,0,0.7); z-index: 2000;
             display: none; justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(4px);
         }
-        #tour-box {
+        .modal-box {
             background: white; width: 450px; padding: 30px; border-radius: 12px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative;
         }
-        #tour-box h2 { margin-top: 0; color: #2c3e50; font-size: 20px; }
-        #tour-box p { color: #555; line-height: 1.6; font-size: 14px; }
-        #tour-box ul { padding-left: 20px; color: #444; margin-bottom: 25px; }
-        #tour-box li { margin-bottom: 10px; font-size: 13px; }
-        #tour-close {
+        .modal-large { width: 80%; height: 90%; display: flex; flex-direction: column; }
+        
+        .modal-close {
             position: absolute; top: 15px; right: 20px; cursor: pointer;
             font-size: 24px; color: #aaa; transition: color 0.2s;
         }
-        #tour-close:hover { color: #333; }
-        button.primary-btn {
-            background: #3498db; color: white; border: none; width: 100%;
-            padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
+        .modal-close:hover { color: #333; }
+
+        /* Preview Modal Specifics */
+        #preview-content {
+            flex-grow: 1; background: #333; margin: 20px 0;
+            display: flex; align-items: center; justify-content: center;
+            overflow: auto; border-radius: 4px;
         }
+        #preview-img { max-width: 100%; max-height: 100%; box-shadow: 0 0 20px #000; }
+        .preview-controls { display: flex; gap: 15px; justify-content: center; }
     </style>
 </head>
 <body>
@@ -145,43 +166,48 @@
     <nav>
         <span class="nav-title">3D Visualization Dashboard</span>
         <div class="nav-links">
-            <a href="index.html">Static View 1</a>
-            <a href="index(1).html">Static View 2</a>
-            <a href="interactive_plot.html" class="active">Interactive Dashboard</a>
+            <a href="#" class="active">Interactive Dashboard</a>
         </div>
     </nav>
 
     <div id="main-wrapper">
         <div id="controls">
-            <h3>Controls <button class="help-btn" onclick="toggleTour()">?</button></h3>
+            <h3>Configuration <button class="help-btn" onclick="toggleTour()">?</button></h3>
 
             <div class="control-group">
-                <div class="control-header">Sphere Appearance</div>
-                
+                <div class="control-header">Global Scale & View</div>
                 <div class="input-row">
-                    <label>Transparency: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
-                    <input type="range" id="sphere-opacity" min="0" max="1" step="0.05" value="0.1">
+                    <label>Scale (Zoom & Axes): <span id="val-sphere-scale" class="value-display">1.0</span></label>
+                    <input type="range" id="sphere-scale" min="0.5" max="2.0" step="0.1" value="1.0">
                 </div>
-                
-                <div class="input-row">
-                    <label>Membrane Color</label>
-                    <input type="color" id="sphere-color" value="#FFC8DC">
+                <div class="checkbox-row">
+                    <label for="show-arrows">Show Connector Arrows</label>
+                    <input type="checkbox" id="show-arrows" checked>
                 </div>
-                
-                <div class="input-row">
-                    <label>Sphere Size (Zoom): <span id="val-sphere-scale" class="value-display">1.0</span></label>
-                    <input type="range" id="sphere-scale" min="0.5" max="1.5" step="0.05" value="1.0">
+                <div class="checkbox-row">
+                    <label for="show-labels">Show Text Labels</label>
+                    <input type="checkbox" id="show-labels" checked>
                 </div>
             </div>
 
             <div class="control-group">
-                <div class="control-header">Data Points</div>
-                
+                <div class="control-header">Appearance</div>
+                <div class="input-row">
+                    <label>Membrane Transparency: <span id="val-sphere-opacity" class="value-display">0.1</span></label>
+                    <input type="range" id="sphere-opacity" min="0" max="1" step="0.05" value="0.1">
+                </div>
+                <div class="input-row">
+                    <label>Membrane Color</label>
+                    <input type="color" id="sphere-color" value="#FFC8DC">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">Data Point Sizes</div>
                 <div class="input-row">
                     <label>Pair Marker Size: <span id="val-pair-size" class="value-display">8</span></label>
                     <input type="range" id="pair-size" min="2" max="30" step="1" value="8">
                 </div>
-
                 <div class="input-row">
                     <label>Single Points Size: <span id="val-single-size" class="value-display">5</span></label>
                     <input type="range" id="single-size" min="1" max="20" step="1" value="5">
@@ -189,25 +215,27 @@
             </div>
 
             <div class="control-group">
-                <div class="control-header">Layout & Labels</div>
-                
+                <div class="control-header">Layout & Legend</div>
                 <div class="input-row">
                     <label>Label Expansion: <span id="val-label-dist" class="value-display">1.0</span></label>
                     <input type="range" id="label-dist" min="0.8" max="2.0" step="0.05" value="1.0">
                 </div>
-
                 <div class="input-row">
-                    <label>Font Size: <span id="val-font-size" class="value-display">11</span></label>
-                    <input type="range" id="font-size" min="8" max="24" step="1" value="11">
+                    <label>Legend X Position: <span id="val-legend-x" class="value-display">0.85</span></label>
+                    <input type="range" id="legend-x" min="0" max="1.1" step="0.05" value="0.85">
                 </div>
-                
                 <div class="input-row">
-                    <label>Axis Text Size: <span id="val-tick-size" class="value-display">20</span></label>
-                    <input type="range" id="tick-size" min="10" max="40" step="1" value="20">
+                    <label>Legend Y Position: <span id="val-legend-y" class="value-display">0.9</span></label>
+                    <input type="range" id="legend-y" min="0" max="1" step="0.05" value="0.9">
                 </div>
             </div>
 
-            <button class="action-btn" onclick="resetView()">Reset Camera View</button>
+            <div class="btn-row">
+                <button class="action-btn" onclick="resetView()">Reset Camera</button>
+            </div>
+            <div class="btn-row">
+                <button class="primary-btn" onclick="openPreview()">Preview Export</button>
+            </div>
         </div>
 
         <div id="plot-container">
@@ -215,18 +243,36 @@
         </div>
     </div>
 
-    <div id="tour-overlay" onclick="toggleTour()">
-        <div id="tour-box" onclick="event.stopPropagation()">
-            <span id="tour-close" onclick="toggleTour()">&times;</span>
+    <div id="tour-overlay" class="overlay" onclick="toggleTour()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="toggleTour()">&times;</span>
             <h2>Dashboard Guide</h2>
-            <p>This interactive tool allows you to customize the 3D visualization for presentations or analysis.</p>
+            <p><strong>New Features:</strong></p>
             <ul>
-                <li><strong>Sphere Appearance:</strong> Adjust the "Cell Membrane" to make it visible or subtle. "Sphere Size" scales the reference boundary.</li>
-                <li><strong>Data Points:</strong> If markers are overlapping, reduce the "Pair Marker Size".</li>
-                <li><strong>Label Expansion:</strong> The most important control. Use this to push text labels further out from the center to prevent clutter.</li>
-                <li><strong>Reset Camera:</strong> Click this if you get lost while rotating the 3D view.</li>
+                <li><strong>Scale (Zoom):</strong> Scaling now changes the sphere size, marker sizes, AND axes ranges proportionally.</li>
+                <li><strong>Toggles:</strong> Turn off arrows or labels using the checkboxes.</li>
+                <li><strong>Legend:</strong> Move the legend using X/Y sliders to clear up space.</li>
+                <li><strong>Export Preview:</strong> Click "Preview Export" to generate A4 or PPT snapshots.</li>
             </ul>
             <button class="primary-btn" onclick="toggleTour()">Got it</button>
+        </div>
+    </div>
+
+    <div id="preview-overlay" class="overlay">
+        <div class="modal-box modal-large" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closePreview()">&times;</span>
+            <h2 style="margin-top:0">Publication Preview</h2>
+            <p style="margin: 0 0 10px 0; color:#666">Select a format to generate a static snapshot of your current view.</p>
+            
+            <div class="preview-controls">
+                <button class="action-btn" style="width:auto" onclick="generateSnapshot('ppt')">16:9 Presentation (PPT)</button>
+                <button class="action-btn" style="width:auto" onclick="generateSnapshot('a4')">A4 Paper (Vertical)</button>
+            </div>
+
+            <div id="preview-content">
+                <p style="color:white; font-size:14px; opacity:0.5">Select a format above to render...</p>
+                <img id="preview-img" src="" style="display:none">
+            </div>
         </div>
     </div>
 
@@ -253,16 +299,14 @@
                  {x: -0.801, y: -0.111, z: 0.622},
                  {x: 0.780, y: -0.507, z: -0.405}
             ],
-            baseRadius: 10.4 
+            baseRadius: 10.4,
+            baseAxisRange: 15 // Standard range to keep proportions
         };
 
         // --- 2. INITIALIZATION ---
-        // Indices for efficient batch updating
         const SPHERE_IDX = 0;
         const SINGLE_IDX = 1;
-        // Markers are at even indices starting from 2: [2, 4, 6, 8, 10, 12, 14, 16]
         const MARKER_INDICES = rawData.centers.map((_, i) => 2 + (i * 2));
-        // Lines are at odd indices starting from 3: [3, 5, 7, 9, 11, 13, 15, 17]
         const LINE_INDICES = rawData.centers.map((_, i) => 3 + (i * 2));
 
         var data = [
@@ -292,15 +336,13 @@
         ];
 
         pairsData.forEach((p, i) => {
-            // Marker Trace
             data.push({
                 type: "scatter3d", mode: "markers+lines",
-                name: `Pair ${i+1} (${p.dist}µm)`,
+                name: `Pair ${i+1}`,
                 marker: { size: 8, color: colors[i], symbol: i < 4 ? 'square' : 'circle' },
                 line: { width: 4, color: colors[i] },
                 x: [p.p1[0], p.p2[0]], y: [p.p1[1], p.p2[1]], z: [p.p1[2], p.p2[2]]
             });
-            // Line Stem Trace
             data.push({
                 type: "scatter3d", mode: "lines", showlegend: false,
                 line: { color: "gray", width: 2 }, hoverinfo: "skip",
@@ -315,14 +357,14 @@
             legend: { x: 0.85, y: 0.9, bgcolor: "rgba(255,255,255,0.8)", bordercolor: "black", borderwidth: 1 },
             scene: {
                 aspectmode: "cube",
-                xaxis: { title: { text: "<b>X (µm)</b>", font: { size: 24, family: "Arial" } }, tickfont: { size: 20 }, range: [-15, 15] },
-                yaxis: { title: { text: "<b>Y (µm)</b>", font: { size: 24, family: "Arial" } }, tickfont: { size: 20 }, range: [-15, 15] },
-                zaxis: { title: { text: "<b>Z (µm)</b>", font: { size: 24, family: "Arial" } }, tickfont: { size: 20 }, range: [-15, 15] },
+                // Dynamic ranges will be set in updateGraphLogic
+                xaxis: { title: "X (µm)", range: [-15, 15] },
+                yaxis: { title: "Y (µm)", range: [-15, 15] },
+                zaxis: { title: "Z (µm)", range: [-15, 15] },
                 annotations: [] 
             }
         };
 
-        // Generate Sphere Geometry
         function generateSphere(radius) {
             const u = [], v = [];
             for(let i=0; i<=20; i++) u.push(i * Math.PI / 20);
@@ -344,8 +386,8 @@
 
         Plotly.newPlot('graph', data, layout, {responsive: true});
 
-        // --- 3. BATCHED UPDATE LOGIC (The Fix) ---
-        // We use a 'debounce' to prevent firing calculations on every single pixel of mouse movement
+        // --- 3. LOGIC UPDATES ---
+        
         function debounce(func, wait) {
             let timeout;
             return function(...args) {
@@ -359,92 +401,103 @@
             // 1. GATHER INPUTS
             const sphereOpacity = parseFloat(document.getElementById('sphere-opacity').value);
             const sphereColor = document.getElementById('sphere-color').value;
-            const sphereScale = parseFloat(document.getElementById('sphere-scale').value);
+            const globalScale = parseFloat(document.getElementById('sphere-scale').value); // This is now Global Scale
             const pairSize = parseInt(document.getElementById('pair-size').value);
             const singleSize = parseInt(document.getElementById('single-size').value);
             const labelDistMult = parseFloat(document.getElementById('label-dist').value);
-            const fontSize = parseInt(document.getElementById('font-size').value);
-            const tickSize = parseInt(document.getElementById('tick-size').value);
+            
+            const legendX = parseFloat(document.getElementById('legend-x').value);
+            const legendY = parseFloat(document.getElementById('legend-y').value);
+            
+            const showArrows = document.getElementById('show-arrows').checked;
+            const showLabels = document.getElementById('show-labels').checked;
 
-            // 2. PRE-CALCULATE ARRAYS
-            const newRadius = rawData.baseRadius * sphereScale;
+            // 2. PRE-CALCULATE SCALED VALUES
+            
+            // A. Scale the Sphere Geometry
+            const newRadius = rawData.baseRadius * globalScale;
             const sphereMesh = generateSphere(newRadius);
-            const currentLabelRadius = newRadius * 1.35 * labelDistMult; 
+            
+            // B. Scale the Marker Sizes (Pixel size * scale factor)
+            // This ensures markers look larger when we "zoom" by scaling the object
+            const scaledPairSize = pairSize * globalScale;
+            const scaledSingleSize = singleSize * globalScale;
+            
+            // C. Scale the Axis Ranges 
+            // If the sphere gets bigger, the axes must get bigger to fit it, 
+            // maintaining the visual proportion.
+            const newRangeLimit = rawData.baseAxisRange * globalScale;
+            const newRange = [-newRangeLimit, newRangeLimit];
 
-            // Prepare arrays for Line Updates
+            const currentLabelRadius = newRadius * 1.35 * labelDistMult; 
             const lineX = [], lineY = [], lineZ = [];
             const newAnnotations = [];
 
+            // 3. GENERATE LINES & ANNOTATIONS
             rawData.centers.forEach((center, i) => {
                 const vec = rawData.vectors[i];
                 const lx = vec.x * currentLabelRadius;
                 const ly = vec.y * currentLabelRadius;
                 const lz = vec.z * currentLabelRadius;
 
-                // Push coordinate arrays for this line
                 lineX.push([center.x, lx]);
                 lineY.push([center.y, ly]);
                 lineZ.push([center.z, lz]);
 
-                // Create annotation object
-                newAnnotations.push({
-                    x: lx, y: ly, z: lz,
-                    text: `Pair ${i+1}`,
-                    ax: 0, ay: 0,
-                    font: { size: fontSize, color: "black", family: "Arial" },
-                    bgcolor: "rgba(255, 255, 255, 0.7)",
-                    bordercolor: "#444", borderpad: 3, borderwidth: 1,
-                    captureevents: true
-                });
+                if (showLabels) {
+                    newAnnotations.push({
+                        x: lx, y: ly, z: lz,
+                        text: `Pair ${i+1}`,
+                        ax: 0, ay: 0,
+                        font: { size: 12, color: "black", family: "Arial" },
+                        bgcolor: "rgba(255, 255, 255, 0.7)",
+                        bordercolor: "#444", borderpad: 3, borderwidth: 1
+                    });
+                }
             });
 
-            // 3. EXECUTE BATCHED UPDATES (Minimizing Plotly Calls)
+            // 4. APPLY UPDATES
             
-            // A. Update Sphere
+            // A. Sphere
             Plotly.restyle('graph', {
                 'opacity': sphereOpacity,
                 'color': sphereColor,
                 'x': [sphereMesh.x], 'y': [sphereMesh.y], 'z': [sphereMesh.z]
             }, [SPHERE_IDX]);
 
-            // B. Update Single Points
-            Plotly.restyle('graph', { 'marker.size': singleSize }, [SINGLE_IDX]);
+            // B. Single Points (Scaled Size)
+            Plotly.restyle('graph', { 'marker.size': scaledSingleSize }, [SINGLE_IDX]);
 
-            // C. Update All Pair Markers (Batch update size only)
-            Plotly.restyle('graph', { 'marker.size': pairSize }, MARKER_INDICES);
+            // C. Pair Markers (Scaled Size)
+            Plotly.restyle('graph', { 'marker.size': scaledPairSize }, MARKER_INDICES);
 
-            // D. Update All Connector Lines (Batch update geometry)
+            // D. Lines (Visibility + Geometry)
+            // If showArrows is false, set visible: false, otherwise true
             Plotly.restyle('graph', { 
-                'x': lineX, 
-                'y': lineY, 
-                'z': lineZ 
+                'x': lineX, 'y': lineY, 'z': lineZ,
+                'visible': showArrows
             }, LINE_INDICES);
 
-            // E. Update Layout (Annotations & Axes)
+            // E. Layout (Axes, Legend, Annotations)
             Plotly.relayout('graph', {
                 'scene.annotations': newAnnotations,
-                'scene.xaxis.tickfont.size': tickSize,
-                'scene.yaxis.tickfont.size': tickSize,
-                'scene.zaxis.tickfont.size': tickSize,
-                // Scales Titles relative to ticks (approx logic)
-                'scene.xaxis.title.font.size': tickSize + 4,
-                'scene.yaxis.title.font.size': tickSize + 4,
-                'scene.zaxis.title.font.size': tickSize + 4,
+                'scene.xaxis.range': newRange,
+                'scene.yaxis.range': newRange,
+                'scene.zaxis.range': newRange,
+                'legend.x': legendX,
+                'legend.y': legendY
             });
         }
 
         const debouncedUpdate = debounce(updateGraphLogic, 50);
 
         function handleInput(e) {
-            // Update the text number immediately for responsiveness
             const spanId = 'val-' + e.target.id;
             const span = document.getElementById(spanId);
             if(span) span.textContent = e.target.value;
-            // Trigger the heavy graph update
             debouncedUpdate();
         }
 
-        // Listeners
         document.querySelectorAll('input').forEach(input => {
             input.addEventListener('input', handleInput);
         });
@@ -453,13 +506,52 @@
             Plotly.relayout('graph', {'scene.camera': null});
         }
 
+        // --- OVERLAY LOGIC ---
         function toggleTour() {
             const modal = document.getElementById('tour-overlay');
             modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
         }
+        
+        function openPreview() {
+            document.getElementById('preview-overlay').style.display = 'flex';
+        }
+        
+        function closePreview() {
+            document.getElementById('preview-overlay').style.display = 'none';
+        }
 
-        // Initial check to toggle tour if needed, currently off by default
-        // toggleTour();
+        function generateSnapshot(format) {
+            const imgEl = document.getElementById('preview-img');
+            const graphDiv = document.getElementById('graph');
+            
+            // Hide image and show text
+            imgEl.style.display = 'none';
+            imgEl.previousElementSibling.innerText = "Generating Snapshot...";
+            imgEl.previousElementSibling.style.display = 'block';
+
+            let width, height;
+
+            if(format === 'ppt') {
+                // 16:9 HD
+                width = 1280; 
+                height = 720; 
+            } else {
+                // A4 approx (vertical)
+                width = 794; 
+                height = 1123; 
+            }
+
+            Plotly.toImage(graphDiv, {format: 'png', width: width, height: height})
+                .then(function(dataUrl) {
+                    imgEl.src = dataUrl;
+                    imgEl.style.display = 'block';
+                    imgEl.previousElementSibling.style.display = 'none';
+                })
+                .catch(function(err) {
+                    console.error("Snapshot error:", err);
+                    imgEl.previousElementSibling.innerText = "Error generating image.";
+                });
+        }
     </script>
 </body>
 </html>
